@@ -8,7 +8,7 @@
   
   - `py mask2yolo.py <masks-folder-path> <target-annotations-folder-path> --<background-color>`
     
-  - All masks will be converted to yolo format and saved into  `<target-annotations-folder-path>`.
+  - All masks will be converted to yolo format and saved into  `target-annotations-folder-path`.
     
 - Run `split.py` to prepare final dataset.
   

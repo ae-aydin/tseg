@@ -17,3 +17,5 @@
   -    `py split.py <images-folder-path> <annotations-folder-path> <created-folder-path> --<train-val-split>`
     
   - Dataset suitable for YOLO will be created at `created-folder-path`.
+ 
+  - Change the `data.yaml` file accordingly (required for model training).

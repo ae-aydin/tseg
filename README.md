@@ -2,6 +2,6 @@
 HU AIN Final Project
 
 #### Workflow
-1. _qupath-script_
-2. _dataset-prep_
-3. _yolo-seg_
+1. _qupath-script_: Create tiles from annotated slides on QuPath.
+2. _dataset-preparation_: Prepare a dataset from all created tiles. 
+3. _yolo-seg_: Train a YOLOv8-seg model.

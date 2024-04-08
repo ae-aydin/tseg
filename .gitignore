@@ -123,10 +123,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-dataset-prep/annotations/
-
-dataset-prep/images/
-
-dataset-prep/prep-venv/
-
-dataset-prep/tiles/
+dataset-preparation/prep-venv/

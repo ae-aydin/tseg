@@ -1,7 +1,0 @@
-path: <created-dataset-path> # dataset root dir, change this line accordingly.
-train: images/train
-val: images/val 
-test: # optional 
-
-names:
-  0: Tumor

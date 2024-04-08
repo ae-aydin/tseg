@@ -7,9 +7,9 @@ import javax.imageio.ImageIO;
 // --------------------------------
 
 def classNames = ["Tumor"]
-double downsample = 3  
+double downsample = 3
 int patchSize = 640  
-int pixelOverlap = 160  
+int pixelOverlap = 64  
 def imageExtension = ".jpg"
 def multiChannel = false;
 def onlyAnnotated = true;
@@ -18,8 +18,9 @@ def onlyAnnotated = true;
 
 def imageData = getCurrentImageData()
 
-def name = GeneralTools.getNameWithoutExtension(imageData.getServer().getMetadata().getName())
-def pathOutput = buildFilePath(PROJECT_BASE_DIR, "tiles_${downsample}_${patchSize}_${pixelOverlap}_${onlyAnnotated}")
+def name = GeneralTools.stripExtension(imageData.getServer().getMetadata().getName())
+def pathOutput = buildFilePath(PROJECT_BASE_DIR, "tiled_${downsample}_${patchSize}_${pixelOverlap}_${onlyAnnotated}")
+
 mkdirs(pathOutput)
 
 def tempServer = new LabeledImageServer.Builder(imageData)
@@ -38,8 +39,11 @@ def labelServer = tempServer.build()
 new TileExporter(imageData)
     .downsample(downsample)         
     .imageExtension(imageExtension)
+    .labeledImageExtension(imageExtension)
     .tileSize(patchSize)
     .labeledServer(labelServer)
+    .labeledImageSubDir("masks")
+    .imageSubDir("images")
     .annotatedTilesOnly(onlyAnnotated)
     .overlap(pixelOverlap)
     .writeTiles(pathOutput)

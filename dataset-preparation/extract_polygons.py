@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 ### Code is taken from https://github.com/ryouchinsa/Rectlabel-support/blob/master/general_json2yolo.py
+### Extracting polygon coordinates from given mask, by taking holes inside polygons into account
 
 def is_clockwise(contour):
     value = 0
@@ -14,6 +15,7 @@ def is_clockwise(contour):
             p2 = contour[0]
         value += (p2[0][0] - p1[0][0]) * (p2[0][1] + p1[0][1])
     return value < 0
+
 
 def get_merge_point_idx(contour1, contour2):
     idx1 = 0
@@ -32,6 +34,7 @@ def get_merge_point_idx(contour1, contour2):
                 idx2 = j
     return idx1, idx2
 
+
 def merge_contours(contour1, contour2, idx1, idx2):
     contour = []
     for i in list(range(0, idx1 + 1)):
@@ -45,6 +48,7 @@ def merge_contours(contour1, contour2, idx1, idx2):
     contour = np.array(contour)
     return contour
 
+
 def merge_with_parent(contour_parent, contour):
     if not is_clockwise(contour_parent):
         contour_parent = contour_parent[::-1]
@@ -53,8 +57,11 @@ def merge_with_parent(contour_parent, contour):
     idx1, idx2 = get_merge_point_idx(contour_parent, contour)
     return merge_contours(contour_parent, contour, idx1, idx2)
 
+
 def mask_to_polygon(mask):
-    contours, hierarchies = cv2.findContours(mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_KCOS)
+    contours, hierarchies = cv2.findContours(
+        mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_KCOS
+    )
     polygons = []
     contours_parent = []
 
@@ -82,5 +89,5 @@ def mask_to_polygon(mask):
     for contour in contours_parent_tmp:
         polygon = contour.squeeze().tolist()
         polygons.append(polygon)
-        
+
     return polygons

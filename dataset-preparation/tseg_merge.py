@@ -11,7 +11,7 @@ def get_all_paths(path_template: str, subfolder: str):
 
     Args:
         path_template (str): path template used in glob (subfolder search)
-        subfolder (str): "QuPath tile export folder name"
+        subfolder (str): QuPath tile export folder name
 
     Returns:
         all_paths: All found tile folder paths

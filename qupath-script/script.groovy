@@ -10,7 +10,7 @@ def classNames = ["Tumor"]
 double downsample = 3
 int patchSize = 640  
 int pixelOverlap = 64  
-def imageExtension = ".jpg"
+def imageExtension = ".png"
 def multiChannel = false;
 def onlyAnnotated = true;
 

@@ -5,11 +5,12 @@ from pathlib import Path
 import cv2
 import numpy as np
 from tqdm import tqdm
+from extract_polygons import mask_to_polygon
 
 TUMOR_COLOR_BGR = (0, 0, 200)
 
 
-def mask_to_yolo(mask_shape: tuple, polygons: dict, annot_path: Path):
+def mask_to_yolo(mask_shape: tuple, polygons: list, annot_path: Path):
     """Convert extracted polygons to YOLO format
 
     Args:
@@ -39,26 +40,20 @@ def mask_to_yolo(mask_shape: tuple, polygons: dict, annot_path: Path):
                 f.write("\n")
 
 
-def extract_polygons(mask_path: Path):
+def extract_polygons(rgb_mask_path: Path):
     """Extract segmented polygons from given mask
 
     Args:
-        mask_path (Path): Mask image path
+        rgb_mask_path (Path): Mask image path
 
     Returns:
-        mask.shape[:-1]: dimensions of the mask
-        class_polygons: list containing polygons
+        rgb_mask.shape[:-1]: Dimensions of the mask
+        class_polygons: List containing polygons
     """
-    mask = cv2.imread(mask_path)
-    class_polygons = list()
-    class_mask = np.all(mask == TUMOR_COLOR_BGR, axis=-1).astype(np.uint8) * 255
-    contours, _ = cv2.findContours(
-        class_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-    )
-    for contour in contours:
-        polygon = contour.squeeze().tolist()
-        class_polygons.append(polygon)
-    return mask.shape[:-1], class_polygons
+    rgb_mask = cv2.imread(str(rgb_mask_path))
+    mask = np.all(rgb_mask == TUMOR_COLOR_BGR, axis=-1).astype(np.uint8) * 255
+    polygons = mask_to_polygon(mask)
+    return rgb_mask.shape[:-1], polygons
 
 
 def visualize_annotations(annotations_path: Path, visualized_path: Path):
@@ -78,7 +73,7 @@ def visualize_annotations(annotations_path: Path, visualized_path: Path):
                 points = list(map(float, o.split()[1:]))
                 points = np.array(points, np.float32).reshape((-1, 1, 2)) * 640
                 cv2.fillPoly(image, np.int32([points]), color=TUMOR_COLOR_BGR)
-        cv2.imwrite(os.path.join(visualized_path, Path(annot_txt).stem + ".jpg"), image)
+        cv2.imwrite(os.path.join(visualized_path, Path(annot_txt).stem + ".png"), image)
 
 
 def convert_to_yolo_format(main_path: Path, filtered: bool, visualize: bool):
@@ -86,8 +81,8 @@ def convert_to_yolo_format(main_path: Path, filtered: bool, visualize: bool):
 
     Args:
         main_path (Path): Main folder containing images, masks, etc.
-        filtered (bool): Whether or not images are filtered (different folder)
-        visualize (bool): Whether or not to visualize YOLO annotations
+        filtered (bool): Whether images are filtered (different folder)
+        visualize (bool): Whether to visualize YOLO annotations
     """
     masks_folder = "masks_filtered" if filtered else "masks"
     masks_path = main_path / masks_folder

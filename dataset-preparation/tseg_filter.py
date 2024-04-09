@@ -16,8 +16,8 @@ def filter_tiles(main_path: Path):
         main_path (Path): Main folder containing images, masks, etc.
 
     Returns:
-        filtered: suitable images
-        empty: empty images
+        filtered: Suitable images
+        empty: Empty images
     """
     images_path = main_path / "images"
     filtered = list()
@@ -37,10 +37,10 @@ def get_filtered_tiles(filtered: list, main_path: Path, subfolder: str, subtype:
     """Getting filtered tiles for given arguments
 
     Args:
-        filtered (list): given filter type image list (empty or filtered)
+        filtered (list): Given filter type image list (empty or filtered)
         main_path (Path): Main folder containing images, masks, etc.
-        subfolder (str): subfolder type (images or masks)
-        subtype (str): filter type (empty or filtered)
+        subfolder (str): Subfolder type (images or masks)
+        subtype (str): Filter type (empty or filtered)
     """
     filtered_path = main_path / str(subfolder + "_" + subtype)
     os.makedirs(filtered_path, exist_ok=True)

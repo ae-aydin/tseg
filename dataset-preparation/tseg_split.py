@@ -11,9 +11,9 @@ def copy(filelist: list, source_path: Path, target_path: Path, ext: str):
 
     Args:
         filelist (list): filenames (stems, same for image and annotation)
-        source_path (Path): source dir path
-        target_path (Path): target dir path
-        ext (str): file extension
+        source_path (Path): Source dir path
+        target_path (Path): Target dir path
+        ext (str): File extension
     """
     description = "/".join(str(target_path).split(os.path.sep)[-3:])
     for file in tqdm(filelist, desc=f"Copying files for {description}", ncols=150):
@@ -27,7 +27,7 @@ def prepare_yolo_dataset(main_path: Path, filtered: bool, ratio: float):
 
     Args:
         main_path (Path): Main folder containing images, masks, etc.
-        filtered (bool): Whether or not images are filtered (different folder)
+        filtered (bool): Whether images are filtered (different folder)
         ratio (float): train-test split ratio
     """
     image_folder = "images_filtered" if filtered else "images"
@@ -49,7 +49,7 @@ def prepare_yolo_dataset(main_path: Path, filtered: bool, ratio: float):
     im_val.mkdir(parents=True, exist_ok=True)
     label_train.mkdir(parents=True, exist_ok=True)
     label_val.mkdir(parents=True, exist_ok=True)
-    copy(train_filelist, images_path, im_train, ".jpg")
-    copy(val_filelist, images_path, im_val, ".jpg")
+    copy(train_filelist, images_path, im_train, ".png")
+    copy(val_filelist, images_path, im_val, ".png")
     copy(train_filelist, annotations_path, label_train, ".txt")
     copy(val_filelist, annotations_path, label_val, ".txt")

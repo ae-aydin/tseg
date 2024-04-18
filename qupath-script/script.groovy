@@ -9,7 +9,7 @@ import javax.imageio.ImageIO;
 def classNames = ["Tumor"]
 double downsample = 3
 int patchSize = 640  
-int pixelOverlap = 64  
+int pixelOverlap = 160
 def imageExtension = ".png"
 def multiChannel = false;
 def onlyAnnotated = true;

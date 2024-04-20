@@ -1,5 +1,6 @@
 # Tumor Segmentation with YOLOv8-seg Models
-HU AIN Final Project
+
+**HU AIN Final Project**
 
 #### Workflow
 1. _qupath-script_: Create tiles from annotated slides on QuPath.

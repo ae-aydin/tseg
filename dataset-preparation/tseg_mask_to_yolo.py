@@ -5,18 +5,22 @@ from pathlib import Path
 import cv2
 import numpy as np
 from tqdm import tqdm
+
 from extract_polygons import mask_to_polygon
 
 TUMOR_COLOR_BGR = (0, 0, 200)
 
+# Used for converting tile masks to YOLO annotations format.
+
 
 def mask_to_yolo(mask_shape: tuple, polygons: list, annot_path: Path):
-    """Convert extracted polygons to YOLO format
+    """
+    Convert extracted polygons to YOLO format.
 
     Args:
-        mask_shape (tuple): Mask dimensions
-        polygons (dict): polygon list
-        annot_path (Path): Where YOLO annotation will be saved
+        mask_shape (tuple): Mask dimensions.
+        polygons (dict): Polygon list.
+        annot_path (Path): Where YOLO annotation will be saved.
     """
     height_y, width_x = mask_shape
     yolo_annot_list = list()
@@ -41,14 +45,15 @@ def mask_to_yolo(mask_shape: tuple, polygons: list, annot_path: Path):
 
 
 def extract_polygons(rgb_mask_path: Path):
-    """Extract segmented polygons from given mask
+    """
+    Extract segmented polygons from given mask.
 
     Args:
-        rgb_mask_path (Path): Mask image path
+        rgb_mask_path (Path): Mask image path.
 
     Returns:
-        rgb_mask.shape[:-1]: Dimensions of the mask
-        class_polygons: List containing polygons
+        tuple: Shape of the mask.
+        list: List containing polygons.
     """
     rgb_mask = cv2.imread(str(rgb_mask_path))
     mask = np.all(rgb_mask == TUMOR_COLOR_BGR, axis=-1).astype(np.uint8) * 255
@@ -57,11 +62,12 @@ def extract_polygons(rgb_mask_path: Path):
 
 
 def visualize_annotations(annotations_path: Path, visualized_path: Path):
-    """Convert YOLO format to mask for comparison
+    """
+    Convert YOLO format to mask for comparison.
 
     Args:
-        annotations_path (Path): Where YOLO annotations located
-        visualized_path (Path): Where resulting mask will be saved
+        annotations_path (Path): Path where YOLO annotations located.
+        visualized_path (Path): Path where resulting mask will be saved.
     """
     for annot_txt in tqdm(
         os.listdir(annotations_path), desc="Visualizing YOLO annotations", ncols=150
@@ -77,12 +83,13 @@ def visualize_annotations(annotations_path: Path, visualized_path: Path):
 
 
 def convert_to_yolo_format(main_path: Path, filtered: bool, visualize: bool):
-    """Convert RGB masks obtained from QuPath script to YOLO format
+    """
+    Convert RGB masks obtained from QuPath script to YOLO format.
 
     Args:
         main_path (Path): Main folder containing images, masks, etc.
-        filtered (bool): Whether images are filtered (different folder)
-        visualize (bool): Whether to visualize YOLO annotations
+        filtered (bool): Whether images are filtered (different folder).
+        visualize (bool): Whether to visualize YOLO annotations.
     """
     masks_folder = "masks_filtered" if filtered else "masks"
     masks_path = main_path / masks_folder

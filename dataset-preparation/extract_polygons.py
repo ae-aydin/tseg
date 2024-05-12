@@ -2,7 +2,8 @@ import cv2
 import numpy as np
 
 ### Code is taken from https://github.com/ryouchinsa/Rectlabel-support/blob/master/general_json2yolo.py
-### Extracting polygon coordinates from given mask, by taking holes inside polygons into account
+### Extracting polygon coordinates from given mask, by taking holes inside polygons into account.
+
 
 def is_clockwise(contour):
     value = 0

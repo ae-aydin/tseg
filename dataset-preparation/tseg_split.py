@@ -5,15 +5,18 @@ from pathlib import Path
 
 from tqdm import tqdm
 
+# Used for creating dataset according to YOLO dataset structure.
+
 
 def copy(filelist: list, source_path: Path, target_path: Path, ext: str):
-    """Copy file from source to target
+    """
+    Copy file from source to target.
 
     Args:
-        filelist (list): filenames (stems, same for image and annotation)
-        source_path (Path): Source dir path
-        target_path (Path): Target dir path
-        ext (str): File extension
+        filelist (list): Filenames (stems, same for image and annotation).
+        source_path (Path): Source directory path.
+        target_path (Path): Target directory path.
+        ext (str): File extension.
     """
     description = "/".join(str(target_path).split(os.path.sep)[-3:])
     for file in tqdm(filelist, desc=f"Copying files for {description}", ncols=150):
@@ -23,12 +26,13 @@ def copy(filelist: list, source_path: Path, target_path: Path, ext: str):
 
 
 def prepare_yolo_dataset(main_path: Path, filtered: bool, ratio: float):
-    """Preparing files according to YOLO dataset format
+    """
+    Preparing files according to YOLO dataset structure.
 
     Args:
         main_path (Path): Main folder containing images, masks, etc.
-        filtered (bool): Whether images are filtered (different folder)
-        ratio (float): train-test split ratio
+        filtered (bool): Whether images are filtered (different folder).
+        ratio (float): Train-Test split ratio.
     """
     image_folder = "images_filtered" if filtered else "images"
     images_path = main_path / image_folder

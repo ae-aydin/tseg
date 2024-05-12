@@ -8,16 +8,20 @@ from tqdm import tqdm
 
 IMAGE_STD_THRESHOLD = 1
 
+# Used for filtering empty images (full white tiles) according to std values.
+# Not used for final dataset.
+
 
 def filter_tiles(main_path: Path):
-    """Filter tiles based on standard deviation
+    """
+    Filter tiles based on standard deviation.
 
     Args:
         main_path (Path): Main folder containing images, masks, etc.
 
     Returns:
-        filtered: Suitable images
-        empty: Empty images
+        list: Suitable images.
+        list: Empty images.
     """
     images_path = main_path / "images"
     filtered = list()
@@ -34,13 +38,14 @@ def filter_tiles(main_path: Path):
 
 
 def get_filtered_tiles(filtered: list, main_path: Path, subfolder: str, subtype: str):
-    """Getting filtered tiles for given arguments
+    """
+    Getting filtered tiles for given arguments.
 
     Args:
-        filtered (list): Given filter type image list (empty or filtered)
+        filtered (list): Given filter type image list (empty or filtered).
         main_path (Path): Main folder containing images, masks, etc.
-        subfolder (str): Subfolder type (images or masks)
-        subtype (str): Filter type (empty or filtered)
+        subfolder (str): Subfolder type (images or masks).
+        subtype (str): Filter type (empty or filtered).
     """
     filtered_path = main_path / str(subfolder + "_" + subtype)
     os.makedirs(filtered_path, exist_ok=True)
@@ -51,7 +56,8 @@ def get_filtered_tiles(filtered: list, main_path: Path, subfolder: str, subtype:
 
 
 def filter_empty(main_path: Path):
-    """Filtering all dataset (splitting empty and suitable)
+    """
+    Filtering all dataset (splitting empty and suitable).
 
     Args:
         main_path (Path): Main folder containing images, masks, etc.

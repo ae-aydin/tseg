@@ -5,16 +5,19 @@ from pathlib import Path
 
 from tqdm import tqdm
 
+# Used for accumulating all QuPath tiles together for further processing.
+
 
 def get_all_paths(path_template: str, subfolder: str):
-    """_summary_
+    """
+    Construct paths.
 
     Args:
-        path_template (str): path template used in glob (subfolder search)
-        subfolder (str): QuPath tile export folder name
+        path_template (str): Path template used in glob (subfolder search).
+        subfolder (str): QuPath tile export folder name (images or masks).
 
     Returns:
-        all_paths: All found tile folder paths
+        list: All the found tile folder paths.
     """
     folders = glob.glob(path_template + "/" + subfolder, recursive=True)
     all_paths = list()
@@ -26,16 +29,17 @@ def get_all_paths(path_template: str, subfolder: str):
 
 
 def create_directories(main_dir_name: str, target_path: Path):
-    """Creating main folder and subfolders
+    """
+    Creating main folder and subfolders.
 
     Args:
         main_dir_name (str): Name for main folder
         target_path (Path): Where to save main folder
 
     Returns:
-        main_folder_path: Main folder path
-        main_images_path: <main-folder>/images path
-        main_masks_path: <main-folder>/masks path
+        Path: Main folder path.
+        Path: <main-folder>/images path.
+        Path: <main-folder>/masks path.
     """
     target_folder_name = "dataset_" + "_".join(main_dir_name.split("_")[1:])
     main_folder_path = target_path / target_folder_name
@@ -47,11 +51,12 @@ def create_directories(main_dir_name: str, target_path: Path):
 
 
 def copy(path_list: list, target_path: Path):
-    """Copy files to given target path
+    """
+    Copy files to given target path.
 
     Args:
-        path_list (list): Filenames
-        target_path (Path): Target path
+        path_list (list): Filenames.
+        target_path (Path): Target path.
     """
     for path in tqdm(
         path_list, desc=f"Accumulating {os.path.basename(target_path)}", ncols=150
@@ -61,15 +66,16 @@ def copy(path_list: list, target_path: Path):
 
 
 def accumulate_all_tiles(projects_path: Path, tile_folder_name: str, target_path: Path):
-    """Accumulate all QuPath project tiles at given target path
+    """
+    Accumulate all QuPath project tiles at given target path.
 
     Args:
-        projects_path (Path): Folder containing all QuPath projects
-        tile_folder_name (str): Tile folder name inside project directories
-        target_path (Path): Where to save main folder
+        projects_path (Path): Folder containing all QuPath projects.
+        tile_folder_name (str): Tile folder name inside project directories.
+        target_path (Path): Where to save main folder.
 
     Returns:
-        main_paths[0]: Main folder path
+        Path: Main folder path.
     """
     path_template = str(projects_path) + "/**/" + tile_folder_name
     image_paths = get_all_paths(path_template, "images")

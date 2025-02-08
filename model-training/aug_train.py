@@ -1,10 +1,11 @@
+import typer
 from ultralytics import YOLO
 
-model = YOLO('yolov8m-seg.pt')
 
-if __name__ == "__main__":
+def main(model_suffix: str):
+    model = YOLO(f"yolo{model_suffix}-seg.pt")
     model.train(
-        data='data.yaml',
+        data="data.yaml",
         batch=16,
         epochs=500,
         imgsz=640,
@@ -26,10 +27,12 @@ if __name__ == "__main__":
         mosaic=0.0,
         mixup=0.0,
         copy_paste=0.0,
-        auto_augment='randaugment',
+        auto_augment="randaugment",
         erasing=0.2,
-        crop_fraction=0.5
+        crop_fraction=0.5,
     )
+    model.val(data="data.yaml", imgsz=640, batch=16, plots=True)
 
-    model.val(data='data.yaml', imgsz=640, batch=16, plots=True)
-    
+
+if __name__ == "__main__":
+    typer.run(main)

@@ -5,7 +5,7 @@ import numpy as np
 ### Extracting polygon coordinates from given mask, by taking holes inside polygons into account.
 
 
-def is_clockwise(contour):
+def _is_clockwise(contour):
     value = 0
     num = len(contour)
     for i, _ in enumerate(contour):
@@ -18,7 +18,7 @@ def is_clockwise(contour):
     return value < 0
 
 
-def get_merge_point_idx(contour1, contour2):
+def _get_merge_point_idx(contour1, contour2):
     idx1 = 0
     idx2 = 0
     distance_min = -1
@@ -36,7 +36,7 @@ def get_merge_point_idx(contour1, contour2):
     return idx1, idx2
 
 
-def merge_contours(contour1, contour2, idx1, idx2):
+def _merge_contours(contour1, contour2, idx1, idx2):
     contour = []
     for i in list(range(0, idx1 + 1)):
         contour.append(contour1[i])
@@ -50,13 +50,13 @@ def merge_contours(contour1, contour2, idx1, idx2):
     return contour
 
 
-def merge_with_parent(contour_parent, contour):
-    if not is_clockwise(contour_parent):
+def _merge_with_parent(contour_parent, contour):
+    if not _is_clockwise(contour_parent):
         contour_parent = contour_parent[::-1]
-    if is_clockwise(contour):
+    if _is_clockwise(contour):
         contour = contour[::-1]
-    idx1, idx2 = get_merge_point_idx(contour_parent, contour)
-    return merge_contours(contour_parent, contour, idx1, idx2)
+    idx1, idx2 = _get_merge_point_idx(contour_parent, contour)
+    return _merge_contours(contour_parent, contour, idx1, idx2)
 
 
 def mask_to_polygon(mask):
@@ -79,7 +79,7 @@ def mask_to_polygon(mask):
             contour_parent = contours_parent[parent_idx]
             if len(contour_parent) == 0:
                 continue
-            contours_parent[parent_idx] = merge_with_parent(contour_parent, contour)
+            contours_parent[parent_idx] = _merge_with_parent(contour_parent, contour)
 
     contours_parent_tmp = []
     for contour in contours_parent:

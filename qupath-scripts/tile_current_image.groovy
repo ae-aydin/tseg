@@ -7,37 +7,42 @@ import javax.imageio.ImageIO;
 // --------------------------------
 
 def classNames = ["Tumor"]
-double downsample = 3
-int patchSize = 640  
-int pixelOverlap = 160
 def imageExtension = ".png"
-def multiChannel = false;
-def onlyAnnotated = true;
+
+def prefix = "wsi_tiled"
+double downsample = 3
+int patchSize = 640
+int pixelOverlap = 320
+def onlyAnnotated = true
+def partialTiles = false
+def customPath = // path to save tiles in
 
 // --------------------------------
 
 def imageData = getCurrentImageData()
-
 def name = GeneralTools.stripExtension(imageData.getServer().getMetadata().getName())
-def pathOutput = buildFilePath(PROJECT_BASE_DIR, "tiled_${downsample}_${patchSize}_${pixelOverlap}_${onlyAnnotated}")
-
+print "Current image: ${name}"
+def folderName = "${prefix}|${name}|${downsample}|${patchSize}|${pixelOverlap}|${onlyAnnotated}|${partialTiles}"
+def pathOutput = buildFilePath(customPath, folderName)
 mkdirs(pathOutput)
 
+getPathClass("Tumor").setColor(255, 255, 255)
+
 def tempServer = new LabeledImageServer.Builder(imageData)
-    .backgroundLabel(0, ColorTools.BLACK)
-    .downsample(downsample)
-    .multichannelOutput(multiChannel)
+.backgroundLabel(0, ColorTools.BLACK)
+.downsample(downsample)
+.multichannelOutput(false)
 
 def counter = 1
 classNames.each { currClassName ->
-    tempServer.addLabel(currClassName, counter)  
+    tempServer.addLabel(currClassName, counter)
     counter++;
 }
 
 def labelServer = tempServer.build()
 
 new TileExporter(imageData)
-    .downsample(downsample)         
+    .downsample(downsample)
     .imageExtension(imageExtension)
     .labeledImageExtension(imageExtension)
     .tileSize(patchSize)
@@ -46,13 +51,15 @@ new TileExporter(imageData)
     .imageSubDir("images")
     .annotatedTilesOnly(onlyAnnotated)
     .overlap(pixelOverlap)
+    .includePartialTiles(partialTiles)
     .writeTiles(pathOutput)
-
-print "Done!"
 
 Thread.sleep(100);
 javafx.application.Platform.runLater {
     getCurrentViewer().getImageRegionStore().cache.clear();
     System.gc();
 }
+
 Thread.sleep(100);
+
+print "Done!"

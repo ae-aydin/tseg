@@ -1,4 +1,3 @@
-import os
 import random
 from pathlib import Path
 
@@ -6,14 +5,14 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from extract_polygons import mask_to_polygon
+from tseg.extract_polygons import mask_to_polygon
 
-TUMOR_COLOR_BGR = (0, 0, 200)
+TUMOR_COLOR_BGR = (255, 255, 255)
 
 # Used for converting tile masks to YOLO annotations format.
 
 
-def mask_to_yolo(mask_shape: tuple, polygons: list, annot_path: Path):
+def _mask_to_yolo(mask_shape: tuple, polygons: list, annot_path: Path):
     """
     Convert extracted polygons to YOLO format.
 
@@ -44,7 +43,7 @@ def mask_to_yolo(mask_shape: tuple, polygons: list, annot_path: Path):
                 f.write("\n")
 
 
-def extract_polygons(rgb_mask_path: Path):
+def _extract_polygons(rgb_mask_path: Path):
     """
     Extract segmented polygons from given mask.
 
@@ -61,49 +60,52 @@ def extract_polygons(rgb_mask_path: Path):
     return rgb_mask.shape[:-1], polygons
 
 
-def visualize_annotations(annotations_path: Path, visualized_path: Path):
+def _visualize_annotations(annotations_path: Path, visualized_path: Path):
     """
-    Convert YOLO format to mask for comparison.
+    Convert YOLO formats to image masks for comparison.
 
     Args:
         annotations_path (Path): Path where YOLO annotations located.
         visualized_path (Path): Path where resulting mask will be saved.
     """
-    for annot_txt in tqdm(
-        os.listdir(annotations_path), desc="Visualizing YOLO annotations", ncols=150
+    for annot_path in tqdm(
+        list(annotations_path.iterdir()), desc="Visualizing YOLO annotations", ncols=100
     ):
         image = np.zeros((640, 640, 3), dtype=np.uint8)
-        with open(os.path.join(annotations_path, annot_txt), "r") as f:
+        with open(annot_path, "r") as f:
             objects = f.readlines()
             for o in objects:
                 points = list(map(float, o.split()[1:]))
-                points = np.array(points, np.float32).reshape((-1, 1, 2)) * 640
-                cv2.fillPoly(image, np.int32([points]), color=TUMOR_COLOR_BGR)
-        cv2.imwrite(os.path.join(visualized_path, Path(annot_txt).stem + ".png"), image)
+                points = np.array(points, dtype=np.float32).reshape((-1, 1, 2)) * 640
+                cv2.fillPoly(
+                    image, [np.array(points, dtype=np.int32)], color=TUMOR_COLOR_BGR
+                )
+        visualized_filename = annot_path.stem + ".png"
+        cv2.imwrite(str(visualized_path / visualized_filename), image)
 
 
-def convert_to_yolo_format(main_path: Path, filtered: bool, visualize: bool):
+def convert_to_yolo_format(subset_path: Path, visualize: bool):
     """
     Convert RGB masks obtained from QuPath script to YOLO format.
 
     Args:
-        main_path (Path): Main folder containing images, masks, etc.
-        filtered (bool): Whether images are filtered (different folder).
+        subset_path (Path): Subset (train, val, test) folder containing images, masks, etc.
         visualize (bool): Whether to visualize YOLO annotations.
     """
-    masks_folder = "masks_filtered" if filtered else "masks"
-    masks_path = main_path / masks_folder
-    annotations_path = main_path / "annotations"
+    masks_path = subset_path / "masks"
+    annotations_path = subset_path / "annotations"
     annotations_path.mkdir(exist_ok=True)
-    for mask_name in tqdm(
-        os.listdir(masks_path), desc="Converting masks to YOLO format", ncols=150
+    for mask_path in tqdm(
+        list(masks_path.iterdir()),
+        desc=f"Converting {subset_path.stem} masks to YOLO format",
+        ncols=100,
     ):
-        mask_path = os.path.join(masks_path, mask_name)
-        mask_basename = os.path.splitext(mask_name)[0]
-        annot_path = os.path.join(annotations_path, f"{mask_basename}.txt")
-        mask_shape, polygons = extract_polygons(mask_path)
-        mask_to_yolo(mask_shape, polygons, annot_path)
+        mask_basename = mask_path.stem
+        annot_path = annotations_path / f"{mask_basename}.txt"
+        mask_shape, polygons = _extract_polygons(mask_path)
+        _mask_to_yolo(mask_shape, polygons, annot_path)
+
     if visualize:
-        visualized_path = main_path / "annotations_visualized"
+        visualized_path = subset_path / "annotations_visualized"
         visualized_path.mkdir(exist_ok=True)
-        visualize_annotations(annotations_path, visualized_path)
+        _visualize_annotations(annotations_path, visualized_path)

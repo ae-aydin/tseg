@@ -20,7 +20,7 @@
 
 - Run `main.py`.
 
-- `py main.py src tiles target [--filter] [--visualize] [--ratio RATIO]`
+- `uv run dataset-preparation/main.py tiles_path export_path [--visualize] [--ratio RATIO]` for *uv*, `py dataset-preparation/main.py tiles_path export_path [--visualize] [--ratio RATIO]` for default.
 
   - `tiles_path` (required): Path containing all tile folders.
 

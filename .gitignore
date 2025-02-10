@@ -128,3 +128,4 @@ dmypy.json
 data.yaml
 *.pt
 runs/
+yolo-seg-training/

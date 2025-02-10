@@ -5,9 +5,6 @@ from loguru import logger
 
 from tseg import split
 
-temp_tiles_path = "/home/arif/Desktop/tiles"
-temp_export_path = "/home/arif/Desktop/"
-
 
 def main(
     tiles_path: str,  # path containing tile folders

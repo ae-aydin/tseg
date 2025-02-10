@@ -1,11 +1,24 @@
-import random
 import shutil
+import cv2
+import numpy as np
 from pathlib import Path
+from loguru import logger
+from tqdm import tqdm
 
 from tseg.yolo_formatter import convert_to_yolo_format
 
 DATA_CATEGORIES = ["wsi_tiled", "img_tiled"]
 
+
+def _fix_mask(mask_path: Path, target_path: Path, binarify_mask: bool = False, kernel_size: int = 5):
+    mask = cv2.imread(mask_path, cv2.IMREAD_COLOR)
+    grayscale_mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+    if binarify_mask:
+        grayscale_mask = (grayscale_mask > 0).astype(np.uint8)
+    kernel = np.ones((5,5), np.uint8)
+    binary_mask = cv2.morphologyEx(grayscale_mask, cv2.MORPH_CLOSE, kernel)
+    cv2.imwrite(str(target_path / mask_path.name), binary_mask)
+    
 
 def _count_data(tiles_path: Path) -> dict:
     """
@@ -43,15 +56,15 @@ def _copy_tiles(
         subset_images_path (Path): train/images or test/images path.
         subset_masks_path (Path): train/masks or test/masks path.
     """
-    for folder in subset_tile_folders:
+    for folder in tqdm(subset_tile_folders, desc=f"Copying {subset_images_path.parent.name} images", ncols=100):
         source_images = tiles_path / folder / "images"
         source_masks = tiles_path / folder / "masks"
 
         for file in source_images.iterdir():
-            shutil.copy2(file, subset_images_path)
+            shutil.copy(file, subset_images_path)
 
         for file in source_masks.iterdir():
-            shutil.copy2(file, subset_masks_path)
+            _fix_mask(file, subset_masks_path)
 
 
 def _accumulate_tiles(
@@ -83,12 +96,14 @@ def _accumulate_tiles(
         test_masks_path,
     ]:
         path.mkdir(parents=True, exist_ok=True)
+        
+    logger.info("Copying tile images according to subset.")
 
     _copy_tiles(tiles_path, train_tile_folders, train_images_path, train_masks_path)
     _copy_tiles(tiles_path, test_tile_folders, test_images_path, test_masks_path)
 
 
-def prepare_yolo_dataset(export_folder_path: Path):
+def _prepare_yolo_dataset(export_folder_path: Path):
     """
     Prepare the YOLO dataset according to the format.
 
@@ -110,18 +125,20 @@ def prepare_yolo_dataset(export_folder_path: Path):
     img_val.mkdir(parents=True, exist_ok=True)
     label_train.mkdir(parents=True, exist_ok=True)
     label_val.mkdir(parents=True, exist_ok=True)
+    
+    logger.info("Arranging dataset in YOLO format.")
 
-    for file in (train_path / "images").iterdir():
-        shutil.copy2(file, img_train)
+    for file in tqdm(list((train_path / "images").iterdir()), desc=f"Copying files to {img_train}", ncols=150):
+        shutil.copy(file, img_train)
 
-    for file in (test_path / "images").iterdir():
-        shutil.copy2(file, img_val)
+    for file in tqdm(list((test_path / "images").iterdir()), desc=f"Copying files to {img_val}", ncols=150):
+        shutil.copy(file, img_val)
 
-    for file in (train_path / "annotations").iterdir():
-        shutil.copy2(file, label_train)
+    for file in tqdm(list((train_path / "annotations").iterdir()), desc=f"Copying files to {label_train}", ncols=150):
+        shutil.copy(file, label_train)
 
-    for file in (test_path / "annotations").iterdir():
-        shutil.copy2(file, label_val)
+    for file in tqdm(list((test_path / "annotations").iterdir()), desc=f"Copying files to {label_val}", ncols=150):
+        shutil.copy(file, label_val)
 
 
 def train_test_split(
@@ -138,15 +155,17 @@ def train_test_split(
     """
     tile_folders_categorized = _count_data(Path(tiles_path))
     train_tile_folders, test_tile_folders = [], []
-    for category, tile_folders in tile_folders_categorized.items():
+    for tile_folders in tile_folders_categorized.values():
         temp_n_train = int(len(tile_folders) * ratio)
-        random.shuffle(tile_folders)
+        np.random.shuffle(tile_folders)
         train_tile_folders.extend(tile_folders[:temp_n_train])
         test_tile_folders.extend(tile_folders[temp_n_train:])
     export_folder_path = export_path / "dataset"
+    logger.info(f"Train tiles ({len(train_tile_folders)} total)\n\t{'\n\t'.join(map(lambda x: str(x.name), train_tile_folders))}")
+    logger.info(f"Test tiles ({len(test_tile_folders)} total)\n\t{'\n\t'.join(map(lambda x: str(x.name), test_tile_folders))}")
     _accumulate_tiles(
         tiles_path, export_folder_path, train_tile_folders, test_tile_folders
     )
     convert_to_yolo_format(export_folder_path / "train", visualize)
     convert_to_yolo_format(export_folder_path / "test", visualize)
-    prepare_yolo_dataset(export_folder_path)
+    _prepare_yolo_dataset(export_folder_path)

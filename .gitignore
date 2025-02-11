@@ -129,3 +129,5 @@ data.yaml
 *.pt
 runs/
 yolo-seg-training/
+tseg/
+wandb/

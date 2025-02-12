@@ -10,13 +10,27 @@ from tseg.yolo_formatter import convert_to_yolo_format
 DATA_CATEGORIES = ["wsi_tiled", "img_tiled"]
 
 
-def _fix_mask(mask_path: Path, target_path: Path, binarify_mask: bool = False, kernel_size: int = 5):
+def _fix_mask(mask_path: Path, target_path: Path, binarify_mask: bool = False, kernel_size: int = 3):
+    """
+    Fix mask imperfections with morphological operations.
+    
+    Args:
+        mask_path (Path): Path to read the mask from.
+        target_path (Path): Path to save the mask to.
+        binarify_mask (bool, optional): Whether to convert pixel value 255 to 1. Defaults to False.
+        kernel_size (int, optional): Kernel size for morphological operations. Defaults to 3.
+    """
     mask = cv2.imread(mask_path, cv2.IMREAD_COLOR)
     grayscale_mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
     if binarify_mask:
         grayscale_mask = (grayscale_mask > 0).astype(np.uint8)
-    kernel = np.ones((5,5), np.uint8)
-    binary_mask = cv2.morphologyEx(grayscale_mask, cv2.MORPH_CLOSE, kernel)
+    kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    
+    # Fixing annotation glitches
+    binary_mask = cv2.morphologyEx(grayscale_mask, cv2.MORPH_CLOSE, kernel) 
+    
+    # Slightly enlarging the masks
+    binary_mask = cv2.dilate(binary_mask, kernel, iterations=1)    
     cv2.imwrite(str(target_path / mask_path.name), binary_mask)
     
 

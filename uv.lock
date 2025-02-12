@@ -1,9 +1,9 @@
 version = 1
 requires-python = ">=3.12"
 resolution-markers = [
+    "sys_platform == 'win32'",
     "sys_platform == 'darwin'",
     "platform_machine == 'aarch64' and sys_platform == 'linux'",
-    "sys_platform == 'win32'",
     "platform_machine != 'aarch64' and sys_platform == 'linux'",
     "sys_platform != 'darwin' and sys_platform != 'linux' and sys_platform != 'win32'",
 ]
@@ -25,7 +25,7 @@ wheels = [
 
 [[package]]
 name = "albumentations"
-version = "2.0.3"
+version = "2.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "albucore" },
@@ -35,9 +35,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "scipy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bf/aa/18991dfcfcecd823aca7bce5f56392dd2b883bb514fa73b5284589fb1963/albumentations-2.0.3.tar.gz", hash = "sha256:65293b192acaaec70d32d2219aeedf6620cd5abb63d9f75c859a853dcdd59c19", size = 273093 }
+sdist = { url = "https://files.pythonhosted.org/packages/a1/be/559123832a0b2887da47f0debb15832567ef9681db9670269df32d801ad8/albumentations-2.0.4.tar.gz", hash = "sha256:4f0cd22576fba8030fc99f1ccacee1452a1880ac2a9ce0882f0d93e5477d5c70", size = 279983 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/ab/983dfa38143c58f4e17136d57c838016cac10cebc25d38c7ddcac05da6e7/albumentations-2.0.3-py3-none-any.whl", hash = "sha256:3efa6b36d333f8c1f0785a8585376c7a14660688b4a60b49fe55da304080a496", size = 284016 },
+    { url = "https://files.pythonhosted.org/packages/e6/19/38d0867de80401416b5dac081d30912c374e956264ec4da22d2b423bf4b9/albumentations-2.0.4-py3-none-any.whl", hash = "sha256:1d60b62527d34bb8791fad90f6faeeb065ecc5cb4577ff85614f022d56183010", size = 289594 },
 ]
 
 [[package]]
@@ -956,15 +956,15 @@ wheels = [
 
 [[package]]
 name = "sentry-sdk"
-version = "2.20.0"
+version = "2.21.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/68/e8/6a366c0cd5e129dda6ecb20ff097f70b18182c248d4c27e813c21f98992a/sentry_sdk-2.20.0.tar.gz", hash = "sha256:afa82713a92facf847df3c6f63cec71eb488d826a50965def3d7722aa6f0fdab", size = 300125 }
+sdist = { url = "https://files.pythonhosted.org/packages/08/63/3f0e88709cf4af992e2813c27d8ba628a891db0805e3fcc6dc834e142c5b/sentry_sdk-2.21.0.tar.gz", hash = "sha256:a6d38e0fb35edda191acf80b188ec713c863aaa5ad8d5798decb8671d02077b6", size = 301965 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/0f/6f7e6cd0f4a141752caef3f79300148422fdf2b8b68b531f30b2b0c0cbda/sentry_sdk-2.20.0-py2.py3-none-any.whl", hash = "sha256:c359a1edf950eb5e80cffd7d9111f3dbeef57994cb4415df37d39fda2cf22364", size = 322576 },
+    { url = "https://files.pythonhosted.org/packages/a4/18/7587660cb5e4d07134913d8e74137efcd4903fda873bf612c30eb34c7ab4/sentry_sdk-2.21.0-py2.py3-none-any.whl", hash = "sha256:7623cfa9e2c8150948a81ca253b8e2bfe4ce0b96ab12f8cd78e3ac9c490fd92f", size = 324096 },
 ]
 
 [[package]]
@@ -1220,7 +1220,8 @@ dependencies = [
     { name = "numpy" },
     { name = "tqdm" },
     { name = "typer" },
-    { name = "ultralytics" },
+    { name = "ultralytics", version = "8.3.23", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
+    { name = "ultralytics", version = "8.3.69", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'darwin'" },
     { name = "wandb" },
 ]
 
@@ -1272,26 +1273,61 @@ wheels = [
 name = "ultralytics"
 version = "8.3.23"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "sys_platform == 'darwin'",
+]
 dependencies = [
-    { name = "matplotlib" },
-    { name = "numpy" },
-    { name = "opencv-python" },
-    { name = "pandas" },
-    { name = "pillow" },
-    { name = "psutil" },
-    { name = "py-cpuinfo" },
-    { name = "pyyaml" },
-    { name = "requests" },
-    { name = "scipy" },
-    { name = "seaborn" },
-    { name = "torch" },
-    { name = "torchvision" },
-    { name = "tqdm" },
-    { name = "ultralytics-thop" },
+    { name = "matplotlib", marker = "sys_platform == 'darwin'" },
+    { name = "numpy", marker = "sys_platform == 'darwin'" },
+    { name = "opencv-python", marker = "sys_platform == 'darwin'" },
+    { name = "pandas", marker = "sys_platform == 'darwin'" },
+    { name = "pillow", marker = "sys_platform == 'darwin'" },
+    { name = "psutil", marker = "sys_platform == 'darwin'" },
+    { name = "py-cpuinfo", marker = "sys_platform == 'darwin'" },
+    { name = "pyyaml", marker = "sys_platform == 'darwin'" },
+    { name = "requests", marker = "sys_platform == 'darwin'" },
+    { name = "scipy", marker = "sys_platform == 'darwin'" },
+    { name = "seaborn", marker = "sys_platform == 'darwin'" },
+    { name = "torch", marker = "sys_platform == 'darwin'" },
+    { name = "torchvision", marker = "sys_platform == 'darwin'" },
+    { name = "tqdm", marker = "sys_platform == 'darwin'" },
+    { name = "ultralytics-thop", marker = "sys_platform == 'darwin'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b1/4e/72413d29388d7b08b198b8e05ec886c4afcb5070af1679cc684da1573aa5/ultralytics-8.3.23.tar.gz", hash = "sha256:2e532dced51a3dc71e54797f94134d251c7b50cd1b23acff3bca3b388cac772f", size = 759642 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9e/20/fcef1ebb10c8eb739d8ae8c3ead86c89d78c0121c23c5df5b85671ef3ef6/ultralytics-8.3.23-py3-none-any.whl", hash = "sha256:490a34589333ba80fbc1e0227449b7ae17d80f16e825712a5335fe2f43dd1f5e", size = 877557 },
+]
+
+[[package]]
+name = "ultralytics"
+version = "8.3.69"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "sys_platform == 'win32'",
+    "platform_machine == 'aarch64' and sys_platform == 'linux'",
+    "platform_machine != 'aarch64' and sys_platform == 'linux'",
+    "sys_platform != 'darwin' and sys_platform != 'linux' and sys_platform != 'win32'",
+]
+dependencies = [
+    { name = "matplotlib", marker = "sys_platform != 'darwin'" },
+    { name = "numpy", marker = "sys_platform != 'darwin'" },
+    { name = "opencv-python", marker = "sys_platform != 'darwin'" },
+    { name = "pandas", marker = "sys_platform != 'darwin'" },
+    { name = "pillow", marker = "sys_platform != 'darwin'" },
+    { name = "psutil", marker = "sys_platform != 'darwin'" },
+    { name = "py-cpuinfo", marker = "sys_platform != 'darwin'" },
+    { name = "pyyaml", marker = "sys_platform != 'darwin'" },
+    { name = "requests", marker = "sys_platform != 'darwin'" },
+    { name = "scipy", marker = "sys_platform != 'darwin'" },
+    { name = "seaborn", marker = "sys_platform != 'darwin'" },
+    { name = "torch", marker = "sys_platform != 'darwin'" },
+    { name = "torchvision", marker = "sys_platform != 'darwin'" },
+    { name = "tqdm", marker = "sys_platform != 'darwin'" },
+    { name = "ultralytics-thop", marker = "sys_platform != 'darwin'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/99/83/6585b4beaf3d7d49a74635710545fbadcf8fce91c3e49b47876b7b4a4b5f/ultralytics-8.3.69.tar.gz", hash = "sha256:6d60acbb44d578327e77fe5dae35efc9f6f8ebd1c8f0e0c3642461091c5621cd", size = 790597 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/81/04/abe9bbafe882c20a1d67bcafea5710800f8feb281d09c0b77874755e5c82/ultralytics-8.3.69-py3-none-any.whl", hash = "sha256:dd2cc90275c5ba60f21a9d374357774da8c0498e1763dbf22f9446b51d3bc8ff", size = 914599 },
 ]
 
 [[package]]

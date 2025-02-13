@@ -65,7 +65,7 @@ def __init__(self, p=1.0):
             A.RandomBrightnessContrast(p=0.25),
             A.RandomGamma(p=0.25),
             A.GaussNoise(p=0.1),
-            A.RGBShift(p=0.1)
+            A.RGBShift(p=0.1),
         ]
 
         # Compose transforms

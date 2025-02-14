@@ -6,7 +6,7 @@ from ultralytics.data.augment import Albumentations
 
 
 def main(model_suffix: str, from_scratch: bool = False):
-    Albumentations.__init__ = __init__
+    Albumentations.__init__ = __init__  # basic Albumentations augmentations
 
     model_type = f"yolo{model_suffix}-seg"
     model_settings = "pt" if not from_scratch else "yaml"
@@ -18,7 +18,7 @@ def main(model_suffix: str, from_scratch: bool = False):
         data="data.yaml",
         epochs=200,
         patience=50,
-        batch=28,
+        batch=24,
         imgsz=640,
         save=True,
         save_period=10,
@@ -50,11 +50,13 @@ def main(model_suffix: str, from_scratch: bool = False):
         flipud=0.3,
         fliplr=0.3,
         mosaic=0.0,
+        mixup=0.0,
+        copy_paste=0.0,
         erasing=0.1,
         crop_fraction=0.0,
     )
 
-    model.val(data="data.yaml", imgsz=640, batch=16, plots=True)
+    model.val(data="data.yaml", imgsz=640, batch=24, plots=True)
 
 
 if __name__ == "__main__":

@@ -9,11 +9,14 @@ from tseg import split
 def main(
     tiles_path: str,  # path containing tile folders
     export_path: str,  # path to create dataset folder
+    tile_ratio: float = 1.0,  # ratio of tiles to copy
     ratio: float = 0.85,  # train-test split
     visualize: bool = False,  # visualize yolo annotations
 ):
     logger.info("Dataset Preparation for tseg")
-    split.train_test_split(Path(tiles_path), Path(export_path), ratio, visualize)
+    split.train_test_split(
+        Path(tiles_path), Path(export_path), tile_ratio, ratio, visualize
+    )
     logger.info("Finished.")
 
 

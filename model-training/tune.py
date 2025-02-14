@@ -16,6 +16,7 @@ def main(model_suffix: str, from_scratch: bool = False):
         batch=24,
         imgsz=640,
         single_cls=True,
+        fraction=0.1,
         optimizer="AdamW",
         plots=False,
         save=False,

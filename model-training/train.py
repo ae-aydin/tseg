@@ -30,6 +30,7 @@ def main(model_suffix: str, from_scratch: bool = False):
         single_cls=True,  # single class: Tumor
         cos_lr=True,
         amp=True,
+        fraction=1.0,  # dataset fraction
         lr0=0.001,  # initial learning rate
         momentum=0.937,  # optimizer momentum
         warmup_epochs=5.0,

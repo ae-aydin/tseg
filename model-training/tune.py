@@ -39,11 +39,12 @@ def main(model_suffix: str, from_scratch: bool = False):
     model.tune(
         data="data.yaml",
         epochs=30,
-        iterations=50,
+        iterations=100,
         batch=24,
         imgsz=640,
         save=False,
         cache=True,
+        project="tseg",
         optimizer="AdamW",
         single_cls=True,  # single class: Tumor
         cos_lr=True,

@@ -3,7 +3,7 @@ from pathlib import Path
 import typer
 from loguru import logger
 
-from tseg import split
+from tseg.split import train_test_split
 
 
 def main(
@@ -14,7 +14,7 @@ def main(
     visualize: bool = False,  # visualize yolo annotations
 ):
     logger.info("Dataset Preparation for tseg")
-    split.train_test_split(
+    train_test_split(
         Path(tiles_path), Path(export_path), tile_ratio, ratio, visualize
     )
     logger.info("Finished.")

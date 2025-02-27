@@ -25,7 +25,7 @@ def _fix_mask(
         binarify_mask (bool, optional): Whether to convert pixel value 255 to 1. Defaults to False.
         kernel_size (int, optional): Kernel size for morphological operations. Defaults to 3.
     """
-    mask = cv2.imread(mask_path, cv2.IMREAD_COLOR)
+    mask = cv2.imread(str(mask_path), cv2.IMREAD_COLOR)
     grayscale_mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
     if binarify_mask:
         grayscale_mask = (grayscale_mask > 0).astype(np.uint8)

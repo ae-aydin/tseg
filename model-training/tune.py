@@ -29,13 +29,15 @@ search_space = {
 
 
 def main(model_suffix: str, from_scratch: bool = False):
-    Albumentations.__init__ = __init__  # basic Albumentations augmentations
+    # Does not work with model.tune
+    # Albumentations.__init__ = __init__  # basic Albumentations augmentations
 
     model_type = f"yolo{model_suffix}-seg"
     model_settings = "pt" if not from_scratch else "yaml"
     model_str = f"{model_type}.{model_settings}"
 
-    model = YOLO(model_str)
+    model = YOLO(model_str, task="segment")
+
     model.tune(
         data="data.yaml",
         epochs=30,

@@ -59,13 +59,15 @@ def __init__(self, p=1.0):
 
         # Transforms
         T = [
+            A.HEStain(method="macenko", preset="h_heavy", p=0.2),
             A.Blur(p=0.1),
             A.MedianBlur(p=0.1),
             A.CLAHE(p=0.1),
-            A.RandomBrightnessContrast(p=0.25),
-            A.RandomGamma(p=0.25),
+            A.RandomBrightnessContrast(p=0.2),
+            A.RandomGamma(p=0.2),
             A.GaussNoise(p=0.1),
             A.RGBShift(p=0.1),
+            A.GridDistortion(p=0.2),
         ]
 
         # Compose transforms

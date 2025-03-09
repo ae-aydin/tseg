@@ -125,7 +125,7 @@ dmypy.json
 
 # Added
 .zed/
-data.yaml
+*.yaml
 *.pt
 runs/
 yolo-seg-training/

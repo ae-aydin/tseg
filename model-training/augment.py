@@ -67,8 +67,9 @@ def __init__(self, p=1.0):
             A.RandomGamma(p=0.2),
             A.GaussNoise(p=0.1),
             A.RGBShift(p=0.1),
-            A.GridDistortion(p=0.2),
+            A.ColorJitter(p=0.1)
         ]
+        #T = [] # no augmentation
 
         # Compose transforms
         self.contains_spatial = any(

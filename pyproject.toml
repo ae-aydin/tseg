@@ -5,11 +5,12 @@ description = "Tumorous area segmentation with YOLO-based models."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "albumentations>=2.0.3",
+    "albumentations>=2.0.5",
     "loguru>=0.7.3",
-    "numpy>=2.2.2",
+    "opencv-python>=4.8.0.74",
+    "pyproject-toml>=0.1.0",
     "tqdm>=4.67.1",
     "typer>=0.15.1",
-    "ultralytics>=8.3.23",
+    "ultralytics>=8.3.86",
     "wandb>=0.19.6",
 ]

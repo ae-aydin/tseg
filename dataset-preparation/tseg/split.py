@@ -13,8 +13,7 @@ DATA_CATEGORIES = ["wsi_tiled", "img_tiled"]
 def _fix_mask(
     mask_path: Path,
     target_path: Path,
-    binarify_mask: bool = False,
-    kernel_size: int = 5,
+    kernel_size: int = 7,
 ):
     """
     Fix mask imperfections with morphological operations.
@@ -25,10 +24,8 @@ def _fix_mask(
         binarify_mask (bool, optional): Whether to convert pixel value 255 to 1. Defaults to False.
         kernel_size (int, optional): Kernel size for morphological operations. Defaults to 3.
     """
-    mask = cv2.imread(str(mask_path), cv2.IMREAD_COLOR)
+    mask = cv2.imread(str(mask_path))
     grayscale_mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
-    if binarify_mask:
-        grayscale_mask = (grayscale_mask > 0).astype(np.uint8)
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
 
     # Fixing annotation glitches

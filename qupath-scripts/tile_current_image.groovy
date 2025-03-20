@@ -22,16 +22,22 @@ def customPath = // path to save tiles in
 def imageData = getCurrentImageData()
 def name = GeneralTools.stripExtension(imageData.getServer().getMetadata().getName())
 print "Current image: ${name}"
-def folderName = "${prefix}|${name}|${downsample}|${patchSize}|${pixelOverlap}|${onlyAnnotated}|${partialTiles}"
+
+def fName = name.split("\\.")[0]
+
+def fOnlyAnnotated = onlyAnnotated ? "T" : "F"
+def fPartialTiles = partialTiles ? "T" : "F"
+
+def folderName = "${prefix}|${fName}|${downsample}|${patchSize}|${pixelOverlap / patchSize}|${fOnlyAnnotated}|${fPartialTiles}"
 def pathOutput = buildFilePath(customPath, folderName)
 mkdirs(pathOutput)
 
 getPathClass("Tumor").setColor(255, 255, 255)
 
 def tempServer = new LabeledImageServer.Builder(imageData)
-.backgroundLabel(0, ColorTools.BLACK)
-.downsample(downsample)
-.multichannelOutput(false)
+    .backgroundLabel(0, ColorTools.BLACK)
+    .downsample(downsample)
+    .multichannelOutput(false)
 
 def counter = 1
 classNames.each { currClassName ->
@@ -44,7 +50,7 @@ def labelServer = tempServer.build()
 new TileExporter(imageData)
     .downsample(downsample)
     .imageExtension(imageExtension)
-    .labeledImageExtension(imageExtension)
+    .labeledImageExtension(".png")
     .tileSize(patchSize)
     .labeledServer(labelServer)
     .labeledImageSubDir("masks")

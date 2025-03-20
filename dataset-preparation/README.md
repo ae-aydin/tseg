@@ -18,9 +18,9 @@
   .
   ```
 
-- Run `main.py`.
+- Run `prepare.py`.
 
-- `uv run dataset-preparation/main.py tiles_path export_path [--visualize] [--ratio RATIO]` for *uv*, `py dataset-preparation/main.py tiles_path export_path [--visualize] [--ratio RATIO]` for default.
+- `uv run dataset-preparation/prepare.py tiles_path export_path [--visualize] [--ratio RATIO]` for *uv*, `py dataset-preparation/prepare.py tiles_path export_path [--visualize] [--ratio RATIO]` for default.
 
   - `tiles_path` (required): Path containing all tile folders.
 

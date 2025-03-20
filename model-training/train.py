@@ -1,9 +1,12 @@
 import typer
-from ultralytics import YOLO
-from loguru import logger
-
 from augment import __init__
+from loguru import logger
+from ultralytics import YOLO
 from ultralytics.data.augment import Albumentations
+from val import evaluate_model
+
+BATCH_SIZE = 48
+IMAGE_SIZE = 640
 
 
 def main(model_suffix: str, from_scratch: bool = False):
@@ -19,11 +22,11 @@ def main(model_suffix: str, from_scratch: bool = False):
         data="data.yaml",
         epochs=300,
         patience=25,
-        batch=48,
-        imgsz=640,
+        batch=BATCH_SIZE,
+        imgsz=IMAGE_SIZE,
         save=True,
-        save_period=0,
-        cache=True,
+        save_period=-1,
+        cache="disk",
         project="tseg",
         name=f"yolo{model_suffix}-seg",
         exist_ok=False,
@@ -38,34 +41,35 @@ def main(model_suffix: str, from_scratch: bool = False):
         weight_decay=0.0005,
         warmup_epochs=5.0,
         warmup_momentum=0.8,
-        box=6.0,
-        cls=1.0,
+        box=5.5,
+        cls=1.2,
         dfl=1.5,
         overlap_mask=True,  # merging overlapping masks
-        dropout=0.3,
+        mask_ratio=4,
+        dropout=0.25,
         val=True,
         plots=True,
-        hsv_h=0.3,
+        hsv_h=0.2,
         hsv_s=0.5,
         hsv_v=0.7,
-        degrees=0.0,
+        degrees=10.0,
         translate=0.1,
         scale=0.1,
         shear=0.0,
         flipud=0.5,
         fliplr=0.5,
-        mosaic=0.25,
+        mosaic=0.4,
         mixup=0.2,
         copy_paste=0.2,
         erasing=0.2,
         crop_fraction=0.2
     )
-    
+
     logger.info("Validation on training set")
-    model.val(data="val_on_train.yaml", imgsz=640, batch=24, plots=True)
-    
+    model.val(data="data_val_on_train.yaml", imgsz=IMAGE_SIZE, batch=BATCH_SIZE, plots=True)
+
     logger.info("Validation")
-    model.val(data="data.yaml", imgsz=640, batch=24, plots=True)
+    evaluate_model(model, "data.yaml", BATCH_SIZE, 0.001)
 
 
 if __name__ == "__main__":

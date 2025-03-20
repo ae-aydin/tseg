@@ -63,14 +63,14 @@ def __init__(self, p=1.0):
             A.Blur(p=0.1),
             A.MedianBlur(p=0.1),
             A.CLAHE(p=0.1),
-            A.RandomBrightnessContrast(p=0.2),
-            A.RandomGamma(p=0.2),
-            A.GaussNoise(p=0.1),
+            A.RandomBrightnessContrast(p=0.1),
+            A.RandomGamma(p=0.1),
             A.RGBShift(p=0.1),
-            A.ColorJitter(p=0.1)
+            A.ColorJitter(p=0.2),
+            A.ElasticTransform(0.2)
         ]
-        #T = [] # no augmentation
-
+        # T = [] # no augmentation
+        
         # Compose transforms
         self.contains_spatial = any(
             transform.__class__.__name__ in spatial_transforms for transform in T

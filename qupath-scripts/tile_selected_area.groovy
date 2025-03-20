@@ -14,7 +14,7 @@ double downsample = 3
 int patchSize = 640
 int pixelOverlap = 160
 def onlyAnnotated = true
-def partialTiles = true
+def partialTiles = false
 def customPath = // path to save tiles in
 
 // --------------------------------
@@ -22,7 +22,13 @@ def customPath = // path to save tiles in
 def imageData = getCurrentImageData()
 def name = GeneralTools.stripExtension(imageData.getServer().getMetadata().getName())
 print "Current image: ${name}"
-def folderName = "${prefix}|${name}|${downsample}|${patchSize}|${pixelOverlap}|${onlyAnnotated}|${partialTiles}"
+
+def fName = name.split("\\.")[0]
+
+def fOnlyAnnotated = onlyAnnotated ? "T" : "F"
+def fPartialTiles = partialTiles ? "T" : "F"
+
+def folderName = "${prefix}|${fName}|${downsample}|${patchSize}|${pixelOverlap / patchSize}|${fOnlyAnnotated}|${fPartialTiles}"
 def pathOutput = buildFilePath(customPath, folderName)
 mkdirs(pathOutput)
 
@@ -50,7 +56,7 @@ for(object in selectedObjects) {
     new TileExporter(imageData)
         .downsample(downsample)
         .imageExtension(imageExtension)
-        .labeledImageExtension(imageExtension)
+        .labeledImageExtension(".png")
         .tileSize(patchSize)
         .labeledServer(labelServer)
         .labeledImageSubDir("masks")

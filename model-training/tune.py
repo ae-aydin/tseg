@@ -1,10 +1,6 @@
 import typer
 from ultralytics import YOLO
 
-from augment import __init__
-from ultralytics.data.augment import Albumentations
-
-
 search_space = {
     "lr0": (1e-5, 1e-1),
     "lrf": (0.01, 1.0),
@@ -51,7 +47,7 @@ def main(model_suffix: str, from_scratch: bool = False):
         single_cls=True,  # single class: Tumor
         cos_lr=True,
         amp=True,
-        fraction=0.1, # dataset fraction
+        fraction=0.1,  # dataset fraction
         overlap_mask=False,  # merging overlapping masks
         val=False,
         plots=False,

@@ -131,3 +131,4 @@ runs/
 yolo-seg-training/
 tseg/
 wandb/
+temp_scripts/

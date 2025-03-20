@@ -62,7 +62,7 @@ def _copy_tiles(
     subset_tile_folders: list,
     subset_images_path: Path,
     subset_masks_path: Path,
-    tile_ratio: float,
+    tile_count: int,
 ):
     """
     Helper function to copy tiles.
@@ -72,7 +72,7 @@ def _copy_tiles(
         subset_tile_folders (list): Train or test tile folder list.
         subset_images_path (Path): train/images or test/images path.
         subset_masks_path (Path): train/masks or test/masks path.
-        tile_ratio (float): Ratio of tiles to copy.
+        tile_count (int): Maximum number of tiles to copy.
     """
     for folder in tqdm(
         subset_tile_folders,
@@ -82,17 +82,16 @@ def _copy_tiles(
         source_images = tiles_path / folder / "images"
         source_masks = tiles_path / folder / "masks"
 
-        ratio = (
-            tile_ratio
-            if source_images.parent.name.split("|")[0] == "wsi_tiled"
-            else tile_ratio * 1.5
-        )
-        ratio = np.clip(ratio, 0.0, 1.0)
-
-        source_images = list(source_images.iterdir())
-        tiles_per_wsi = int(len(source_images) * ratio)
-        np.random.shuffle(source_images)
-        source_files = source_images[:tiles_per_wsi]
+        source_images_list = list(source_images.iterdir())
+        
+        # Apply tile count limit only to "wsi_tiled" folders if specified
+        if tile_count != -1 and source_images.parent.name.split("|")[0] == "wsi_tiled":
+            tiles_per_wsi = min(tile_count, len(source_images_list))
+            np.random.shuffle(source_images_list)
+            source_files = source_images_list[:tiles_per_wsi]
+        else:
+            # Copy all tiles for non-wsi_tiled folders
+            source_files = source_images_list
 
         for file in source_files:
             shutil.copy(file, subset_images_path)
@@ -106,7 +105,7 @@ def _accumulate_tiles(
     export_path: Path,
     train_tile_folders: list,
     test_tile_folders: list,
-    tile_ratio: float,
+    tile_count: int,
 ):
     """
     Create the dataset folder and copy the files according to the train-test split.
@@ -116,7 +115,7 @@ def _accumulate_tiles(
         export_path (Path): Path to export (dataset) folder.
         train_tile_folders (list): Tile folder names selected for train set.
         test_tile_folders (list): Tile folder names selected for test set.
-        tile_ratio (float): Ratio of tiles to copy.
+        tile_count (int): Maximum tile count in a wsi.
     """
     # Define dataset folder structure
     train_images_path = export_path / "train" / "images"
@@ -136,10 +135,10 @@ def _accumulate_tiles(
     logger.info("Copying tile images according to subset.")
 
     _copy_tiles(
-        tiles_path, train_tile_folders, train_images_path, train_masks_path, tile_ratio
+        tiles_path, train_tile_folders, train_images_path, train_masks_path, tile_count
     )
     _copy_tiles(
-        tiles_path, test_tile_folders, test_images_path, test_masks_path, tile_ratio
+        tiles_path, test_tile_folders, test_images_path, test_masks_path, tile_count
     )
 
 
@@ -200,7 +199,7 @@ def _prepare_yolo_dataset(export_path: Path):
 def train_test_split(
     tiles_path: Path,
     export_path: Path,
-    tile_ratio: float,
+    tile_count: int,
     ratio: float,
     visualize: bool,
 ):
@@ -210,7 +209,7 @@ def train_test_split(
     Args:
         tiles_path (Path): Path containing all tile folders.
         export_path (Path): Path where dataset folder will be created.
-        tile_ratio (float): Ratio of tiles to copy.
+        tile_count (float): Maximum tile count in a wsi.
         ratio (float): Train-test split ratio.
         visualize (bool): Whether to visualize YOLO format to check consistency.
     """
@@ -228,7 +227,7 @@ def train_test_split(
         f"Test tiles ({len(test_tile_folders)} total)\n\t{'\n\t'.join(map(lambda x: str(x.name), test_tile_folders))}"
     )
     _accumulate_tiles(
-        tiles_path, export_path, train_tile_folders, test_tile_folders, tile_ratio
+        tiles_path, export_path, train_tile_folders, test_tile_folders, tile_count
     )
     convert_to_yolo_format(export_path / "train", visualize)
     convert_to_yolo_format(export_path / "test", visualize)

@@ -13,7 +13,7 @@ DATA_CATEGORIES = ["wsi_tiled", "img_tiled"]
 def _fix_mask(
     mask_path: Path,
     target_path: Path,
-    kernel_size: int = 7,
+    kernel_size: int = 5,
 ):
     """
     Fix mask imperfections with morphological operations.
@@ -216,7 +216,7 @@ def train_test_split(
     tile_folders_categorized = _count_data(tiles_path)
     train_tile_folders, test_tile_folders = [], []
     for tile_folders in tile_folders_categorized.values():
-        temp_n_train = int(len(tile_folders) * ratio)
+        temp_n_train = int(round(len(tile_folders) * ratio))
         np.random.shuffle(tile_folders)
         train_tile_folders.extend(tile_folders[:temp_n_train])
         test_tile_folders.extend(tile_folders[temp_n_train:])

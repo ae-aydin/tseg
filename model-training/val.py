@@ -131,7 +131,7 @@ def evaluate_model(model_type, yaml_path: str, batch_size: int, conf: float):
         data="data.yaml", imgsz=640, batch=batch_size, conf=conf, project="tseg", plots=True
     )
 
-    logger.info(f"Extra metrics On {count} images")
+    logger.info(f"Extra metrics on {count} images")
 
     p = val_results.seg.p[0]
     logger.info(f"Precision: {p:.4f}")

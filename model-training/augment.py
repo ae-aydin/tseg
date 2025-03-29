@@ -59,15 +59,15 @@ def __init__(self, p=1.0):
 
         # Transforms
         T = [
-            A.HEStain(method="macenko", preset="h_heavy", p=0.2),
             A.Blur(p=0.1),
             A.MedianBlur(p=0.1),
             A.CLAHE(p=0.1),
+            # A.HEStain(method="macenko", preset="h_heavy", p=0.2),
             A.RandomBrightnessContrast(p=0.1),
             A.RandomGamma(p=0.1),
             A.RGBShift(p=0.1),
-            A.ColorJitter(p=0.2),
-            A.ElasticTransform(0.2)
+            A.ColorJitter(p=0.1),
+            A.ElasticTransform(0.1)
         ]
         # T = [] # no augmentation
         

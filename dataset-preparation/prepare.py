@@ -10,7 +10,7 @@ def main(
     tiles_path: str,  # path containing tile folders
     export_path: str,  # path to create dataset folder
     tile_count: int = -1,  # maximum tile count in a wsi
-    ratio: float = 0.85,  # train-test split
+    ratio: float = 0.7,  # train-test split
     visualize: bool = False,  # visualize yolo annotations
 ):
     logger.info("Dataset Preparation for tseg")

@@ -1,10 +1,10 @@
-# Tumor Segmentation with YOLOv8-seg Models
+# Tumor Segmentation for QuPath
 
 ## Workflow
 
 1. _qupath-scripts_: Create tiles from annotated slides on QuPath.
 
-2. _dataset-preparation_: Prepare dataset from all created tiles. 
+2. _dataset-preparation_: Prepare dataset from all created tiles.
 
 3. _model-training_: Train YOLO-based segmentation model.
 

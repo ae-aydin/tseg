@@ -20,13 +20,16 @@
 
 - Run `prepare.py`.
 
-- `uv run dataset-preparation/prepare.py tiles_path export_path [--visualize] [--ratio RATIO]` for *uv*, `py dataset-preparation/prepare.py tiles_path export_path [--visualize] [--ratio RATIO]` for default.
+- For *uv*: `uv run dataset-preparation/prepare.py tiles_path export_path [--tile-count TILE_COUNT] [--ratio RATIO] [--visualize]`
+- For *pip*: `py dataset-preparation/prepare.py tiles_path export_path [--tile-count TILE_COUNT] [--ratio RATIO] [--visualize]`
 
   - `tiles_path` (required): Path containing all tile folders.
 
   - `export_path` (required): Where the new dataset folder will be created.
 
-  - `--ratio RATIO` (optional): Train-test split ratio. Default is 0.85.
+  - `--tile-count TILE_COUNT` (optional): Max tile count per slide.
+
+  - `--ratio RATIO` (optional): Train-test split ratio. Default is 0.7.
 
   - `--visualize` (optional): Whether to visualize mask to YOLO conversion.
 
@@ -45,3 +48,5 @@
 - Improve code readability.
 
 - Improve logging.
+
+- Make YOLO format optional.

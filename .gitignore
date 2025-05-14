@@ -37,6 +37,7 @@ env/
 venv/
 
 # Added
+.ruff_cache/
 .zed/
 *.yaml
 *.pt

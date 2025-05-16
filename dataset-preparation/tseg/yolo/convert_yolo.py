@@ -5,14 +5,14 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-from tseg.extract_polygons import mask_to_polygon
+from .polygon_ops import mask_to_polygon
 
 TUMOR_COLOR_BGR = (255, 255, 255)
 
-# Used for converting tile masks to YOLO annotations format.
+# Used for converting binary tile mask to YOLO annotation format.
 
 
-def _mask_to_yolo(mask_shape: tuple, polygons: list, annot_path: Path):
+def mask_to_yolo(mask_shape: tuple, polygons: list, annot_path: Path):
     """
     Convert extracted polygons to YOLO format.
 
@@ -43,7 +43,7 @@ def _mask_to_yolo(mask_shape: tuple, polygons: list, annot_path: Path):
                 f.write("\n")
 
 
-def _extract_polygons(rgb_mask_path: Path):
+def extract_polygons(rgb_mask_path: Path):
     """
     Extract segmented polygons from given mask.
 
@@ -60,7 +60,7 @@ def _extract_polygons(rgb_mask_path: Path):
     return rgb_mask.shape[:-1], polygons
 
 
-def _visualize_annotations(annotations_path: Path, visualized_path: Path):
+def visualize_annotations(annotations_path: Path, visualized_path: Path):
     """
     Convert YOLO formats to image masks for comparison.
 
@@ -102,10 +102,10 @@ def convert_to_yolo_format(subset_path: Path, visualize: bool):
     ):
         mask_basename = mask_path.stem
         annot_path = annotations_path / f"{mask_basename}.txt"
-        mask_shape, polygons = _extract_polygons(mask_path)
-        _mask_to_yolo(mask_shape, polygons, annot_path)
+        mask_shape, polygons = extract_polygons(mask_path)
+        mask_to_yolo(mask_shape, polygons, annot_path)
 
     if visualize:
         visualized_path = subset_path / "annotations_visualized"
         visualized_path.mkdir(exist_ok=True)
-        _visualize_annotations(annotations_path, visualized_path)
+        visualize_annotations(annotations_path, visualized_path)

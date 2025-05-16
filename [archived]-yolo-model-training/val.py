@@ -128,7 +128,12 @@ def evaluate_model(model_type, yaml_path: str, batch_size: int, conf: float):
 
     logger.info("Validation on ultralytics framework to calculate more metrics.")
     val_results = model.val(
-        data="data.yaml", imgsz=640, batch=batch_size, conf=conf, project="tseg", plots=True
+        data="data.yaml",
+        imgsz=640,
+        batch=batch_size,
+        conf=conf,
+        project="tseg",
+        plots=True,
     )
 
     logger.info(f"Extra metrics on {count} images")

@@ -67,10 +67,10 @@ def __init__(self, p=1.0):
             A.RandomGamma(p=0.1),
             A.RGBShift(p=0.1),
             A.ColorJitter(p=0.1),
-            A.ElasticTransform(0.1)
+            A.ElasticTransform(0.1),
         ]
         # T = [] # no augmentation
-        
+
         # Compose transforms
         self.contains_spatial = any(
             transform.__class__.__name__ in spatial_transforms for transform in T

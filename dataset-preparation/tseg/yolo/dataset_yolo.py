@@ -1,7 +1,10 @@
+import shutil
 from pathlib import Path
+
 from loguru import logger
 from tqdm import tqdm
-import shutil
+
+# Used for preparing dataset in YOLO compatible format.
 
 
 def _create_yolo_dataset_structure(yolo_dataset_path: Path):

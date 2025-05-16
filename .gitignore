@@ -39,8 +39,8 @@ venv/
 # Added
 .ruff_cache/
 .zed/
-*.yaml
 *.pt
 wandb/
 temp_scripts/
+temp_dataset/
 TODO

@@ -1,1 +1,1 @@
-from tseg.split import train_test_split
+from tseg.dataset import train_test_split

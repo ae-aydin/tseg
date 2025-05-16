@@ -1,21 +1,29 @@
 [project]
 name = "tseg"
 version = "0.1.0"
-description = "Tumorous area segmentation with YOLO-based models."
+description = "Tumorous area segmentation with segmentation models."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "albumentations>=2.0.5",
     "loguru>=0.7.3",
-    "opencv-python>=4.8.0.74",
+    "polars>=1.29.0",
     "tqdm>=4.67.1",
+    "torch>=2.7.0",
+    "torchvision>=0.22.0",
     "typer>=0.15.1",
-    "ultralytics>=8.3.86",
-    "wandb>=0.19.6",
+    "mlflow>=2.22.0",
+    "opencv-contrib-python>=4.11.0.86",
 ]
 
-[dependency-groups]
-dev = [
-    "lightning>=2.5.1",
-    "segmentation-models-pytorch>=0.4.0",
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu128", marker = "sys_platform == 'linux'" },
 ]
+torchvision = [
+  { index = "pytorch-cu128", marker = "sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

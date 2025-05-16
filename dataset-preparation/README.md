@@ -19,14 +19,11 @@
     ```
 
 2. Run `prepare.py`.
-   - For *uv*: `uv run dataset-preparation/prepare.py tiles_path export_path [--tile-count TILE_COUNT] [--train-ratio RATIO] [--val-ratio RATIO] [--yolo-format] [--visualize]`
-   - For *pip*: `py dataset-preparation/prepare.py tiles_path export_path [--tile-count TILE_COUNT] [--train-ratio RATIO] [--val-ratio RATIO] [--yolo-format] [--visualize]`
+   - For *uv*: `uv run dataset-preparation/prepare.py source target [--train-ratio RATIO] [--val-ratio RATIO] [--yolo-format]`
    - Arguments:
-     - `tiles_path` (required): Path containing all tile folders.
+     - `source` (required): Path containing all tile folders.
 
-     - `export_path` (required): Where the new dataset folder will be created.
-
-     - `--tile-count TILE_COUNT` (optional): Max tile count per slide.
+     - `target` (required): Where the new dataset folder will be created.
 
      - `--train-ratio RATIO` (optional): Train set ratio. Default is 0.6.
 
@@ -34,13 +31,12 @@
        - If `train-ratio + val-ratio == 1`, then no test set created. Otherwise test set created from remaining fraction.
 
      - `--yolo-format` (optional): Whether to create YOLO dataset.
+       - All generated YOLO annotations are automatically visualized for sanity check.
 
-     - `--visualize` (optional): Whether to visualize mask to YOLO conversion.
+     - All created/prepared files will be saved into `target`.
 
-     - All created/prepared files will be saved into `export_path`.
-
-     - All masks will be converted to yolo format and saved into `export_path/yolo_dataset` if `--yolo-format` provided.
-       - Change the `data.yaml` file accordingly (used for YOLO model training).
+     - All masks will be converted to yolo format and saved into `target/yolo_dataset` if `--yolo-format` provided.
+       - Change the `[archived]-yolo-model-training/yolo_dataset.yaml` file accordingly (used for YOLO model training).
 
 ## Future Improvements
 

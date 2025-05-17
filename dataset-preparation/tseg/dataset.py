@@ -6,7 +6,7 @@ from tseg import data_ops
 
 
 def create_dataset_folders(target: Path):
-    logger.info("Creating target dataset.")
+    logger.info("Creating dataset folders")
     dirs = {
         "parent": target,
         "train": target / "train",

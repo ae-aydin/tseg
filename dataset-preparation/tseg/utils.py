@@ -17,16 +17,16 @@ def save_csv(entries: list, target: Path) -> None:
     df.write_csv(target)
 
 
-def add_suffix_to_dir_items(source: Path, suffix="_mask") -> None:
+def add_suffix_to_dir_items(source: Path, suffix="label") -> None:
     for item in source.iterdir():
         if item.is_file():
-            new_name = f"{item.stem}{suffix}{item.suffix}"
+            new_name = f"{item.stem}_{suffix}{item.suffix}"
             item.rename(source / new_name)
-            
+
 
 def pad_str(s: str, max_len: int = 15, pad: str = "."):
     if len(s) > max_len:
-        s = s[:max_len - 3] + "..."
+        s = s[: max_len - 3] + "..."
 
     n_space = max_len - len(s)
     return f"{pad * n_space}{s}"

@@ -26,9 +26,7 @@ def calculate_tumor_percentage(source: Path) -> float:
     mask_array = cv2.imread(source, cv2.IMREAD_GRAYSCALE)
     tumor_pixels = cv2.countNonZero(mask_array)
     total_pixels = mask_array.size
-    tumor_percentage = (
-        (tumor_pixels / total_pixels) if total_pixels > 0 else 0.0
-    )
+    tumor_percentage = (tumor_pixels / total_pixels) if total_pixels > 0 else 0.0
     return tumor_percentage
 
 

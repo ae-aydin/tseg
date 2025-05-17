@@ -21,7 +21,7 @@ def categorize_tiles(tile_folders_path: Path) -> dict:
     Returns:
         dict: Categorized slides.
     """
-    logger.info("Categorizing Tiles")
+    logger.info("Categorizing tiled slides")
     categorized_tile_folders = {
         category: list(
             filter(
@@ -57,16 +57,18 @@ def extract_slide_info(slide_folder_paths: list) -> list:
         "only_annotated_tiles",
         "allow_partial_tiles",
         "tile_count",
-        "mask_count"
+        "mask_count",
     ]
 
     dataset_entries = []
     for folder_path in slide_folder_paths:
         split_folder_name = folder_path.name.split("|")
-        
+
         tile_count = len([*(folder_path / "images").iterdir()])
         mask_count = len([*(folder_path / "masks").iterdir()])
-        slide_info = dict(zip(column_names, split_folder_name + [tile_count, mask_count]))
+        slide_info = dict(
+            zip(column_names, split_folder_name + [tile_count, mask_count])
+        )
         dataset_entries.append(slide_info)
 
     return dataset_entries
@@ -93,12 +95,12 @@ def extract_location_info(filename: str) -> dict | None:
     return None
 
 
-def extract_tile_info(source: Path) -> list:
-    """Extract tile & mask information from file name and mask. 
+def extract_tile_info(source: Path, suffix: str = "label", ext: str = "png") -> list:
+    """Extract tile & mask information from file name and mask.
 
     Args:
         source (Path): Directory containing images. Should have masks folder in parent directory to derive mask paths.
-        
+
     Returns:
         list: All tile & mask information in given source directory.
     """
@@ -107,7 +109,7 @@ def extract_tile_info(source: Path) -> list:
     for item in source.iterdir():
         if item.is_file():
             slide_dir_path = item.parent.parent
-            mask_name = f"{item.stem}_mask.png"
+            mask_name = f"{item.stem}_{suffix}.{ext}"
 
             entry = {
                 "slide_name": str(slide_dir_path.name),
@@ -201,7 +203,6 @@ def construct_dataset(source: Path, split_info_path: Path, dirs: dict) -> None:
     pbar = tqdm(
         split_df.iter_rows(named=True),
         total=len(split_df),
-        desc=f"Processing Slides",
         position=0,
         leave=True,
         ncols=100,
@@ -209,7 +210,7 @@ def construct_dataset(source: Path, split_info_path: Path, dirs: dict) -> None:
     for row_dict in pbar:
         current_slide_name = row_dict["slide_name"]
         pbar.set_description(f"Processing Slides | {utils.pad_str(current_slide_name)}")
-        
+
         current_path = source / row_dict["full_name"]
         target_path = dirs[row_dict["split"]] / current_slide_name
         shutil.copytree(current_path, target_path)
@@ -222,4 +223,4 @@ def construct_dataset(source: Path, split_info_path: Path, dirs: dict) -> None:
     tiles_info_path = dirs["metadata"] / "tiles_metadata.csv"
     utils.save_csv(all_tile_info_entries, tiles_info_path)
     logger.info(f"Tile metadata extracted at {split_info_path}")
-    logger.info(f"Dataset constructed at {dirs['parent']}")
+    logger.info(f"Dataset constructed at {dirs['parent']}/")

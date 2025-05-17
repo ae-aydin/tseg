@@ -40,4 +40,6 @@
 
 ## Future Improvements
 
-- Add K-fold cross-validation scheme.
+- Add set-wise metadata extraction.
+- Add YOLO dataset creation.
+- Add k-fold cross-validation scheme.

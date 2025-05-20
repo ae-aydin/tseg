@@ -6,7 +6,7 @@ import yaml
 CONFIG_PATH = Path("./dataset-preparation/config.yaml")
 
 
-def load_yaml(source: str = CONFIG_PATH) -> dict:
+def load_yaml(source: Path = CONFIG_PATH) -> dict:
     with open(source, "r") as f:
         data = yaml.safe_load(f)
     return data

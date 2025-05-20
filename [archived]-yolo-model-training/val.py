@@ -36,7 +36,7 @@ def calculate_iou_dice(true_mask: np.ndarray, pred_mask: np.ndarray):
     return iou, dice
 
 
-def get_true_mask(label_path: Path, height: float, width: float):
+def get_true_mask(label_path: Path, height: int, width: int):
     true_mask = np.zeros((height, width), dtype=np.uint8)
 
     if not label_path.exists():
@@ -53,12 +53,12 @@ def get_true_mask(label_path: Path, height: float, width: float):
         points = []
         for i in range(1, len(parts), 2):
             if i + 1 < len(parts):
-                x = float(parts[i]) * width
-                y = float(parts[i + 1]) * height
+                x = int(float(parts[i]) * width)
+                y = int(float(parts[i + 1]) * height)
                 points.append([x, y])
 
         if len(points) >= 3:
-            cv2.fillPoly(true_mask, [np.array(points, dtype=np.int32)], 1)
+            cv2.fillPoly(true_mask, [np.array(points, dtype=np.int32)], (255, 255, 255))
 
     return true_mask
 

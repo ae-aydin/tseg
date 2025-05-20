@@ -37,6 +37,7 @@ env/
 venv/
 
 # Added
+.ipynb_checkpoints/
 .ruff_cache/
 .zed/
 *.pt

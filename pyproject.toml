@@ -27,3 +27,9 @@ torchvision = [
 name = "pytorch-cu128"
 url = "https://download.pytorch.org/whl/cu128"
 explicit = true
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+    "marimo[recommended]>=0.13.10",
+]

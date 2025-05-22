@@ -85,18 +85,18 @@ def _(pl, slide_split_join_df):
     stats = slide_split_join_df["tile_count"]
     overall = pl.DataFrame({
         "set": ["ALL"],
-        "s_count": [len(slide_split_join_df)],
-        "s_pct": [100.0],
-        "t_min": [stats.min()],
-        "t_max": [stats.max()],
-        "t_avg": [round(stats.mean(), 0)],
-        "t_std": [round(stats.std(), 0)],
-        "t_median": [stats.median()],
-        "t_count": [stats.sum()],
-        "t_pct": [100.0],
+        "slide_count": [len(slide_split_join_df)],
+        "slide_pct": [100.0],
+        "tile_min": [stats.min()],
+        "tile_max": [stats.max()],
+        "tile_avg": [round(stats.mean(), 0)],
+        "tile_std": [round(stats.std(), 0)],
+        "tile_median": [stats.median()],
+        "tile_count": [stats.sum()],
+        "tile_pct": [100.0],
     })
 
-    overall = overall.cast({"s_count": pl.UInt32})
+    overall = overall.cast({"slide_count": pl.UInt32})
 
     overall
     return (overall,)
@@ -110,19 +110,19 @@ def _(overall, pl, slide_split_join_df):
         slide_split_join_df
         .group_by("category")
         .agg([
-            pl.len().alias("s_count"),
-            pl.col("tile_count").min().alias("t_min"),
-            pl.col("tile_count").max().alias("t_max"),
-            pl.col("tile_count").mean().round(0).alias("t_avg"),
-            pl.col("tile_count").std().round(0).alias("t_std"),
-            pl.col("tile_count").median().alias("t_median"),
-            pl.col("tile_count").sum().alias("t_count"),
+            pl.len().alias("slide_count"),
+            pl.col("tile_count").min().alias("tile_min"),
+            pl.col("tile_count").max().alias("tile_max"),
+            pl.col("tile_count").mean().round(0).alias("tile_avg"),
+            pl.col("tile_count").std().round(0).alias("tile_std"),
+            pl.col("tile_count").median().alias("tile_median"),
+            pl.col("tile_count").sum().alias("tile_count"),
         ])
         .with_columns(
-            (pl.col("s_count") / pl.col("s_count").sum() * 100).round(2).alias("s_pct"),
-            (pl.col("t_count") / pl.col("t_count").sum() * 100).round(2).alias("t_pct")
+            (pl.col("slide_count") / pl.col("slide_count").sum() * 100).round(2).alias("slide_pct"),
+            (pl.col("tile_count") / pl.col("tile_count").sum() * 100).round(2).alias("tile_pct")
         )
-        .sort(by="t_count", descending=True)
+        .sort(by="tile_count", descending=True)
     )
 
     per_category = per_category.rename({"category": "set"})
@@ -140,19 +140,19 @@ def _(overall, pl, slide_split_join_df):
         slide_split_join_df
         .group_by("split")
         .agg([
-            pl.len().alias("s_count"),
-            pl.col("tile_count").min().alias("t_min"),
-            pl.col("tile_count").max().alias("t_max"),
-            pl.col("tile_count").mean().round(0).alias("t_avg"),
-            pl.col("tile_count").std().round(0).alias("t_std"),
-            pl.col("tile_count").median().alias("t_median"),
-            pl.col("tile_count").sum().alias("t_count"),
+            pl.len().alias("slide_count"),
+            pl.col("tile_count").min().alias("tile_min"),
+            pl.col("tile_count").max().alias("tile_max"),
+            pl.col("tile_count").mean().round(0).alias("tile_avg"),
+            pl.col("tile_count").std().round(0).alias("tile_std"),
+            pl.col("tile_count").median().alias("tile_median"),
+            pl.col("tile_count").sum().alias("tile_count"),
         ])
         .with_columns(
-            (pl.col("s_count") / pl.col("s_count").sum() * 100).round(2).alias("s_pct"),
-            (pl.col("t_count") / pl.col("t_count").sum() * 100).round(2).alias("t_pct")
+            (pl.col("slide_count") / pl.col("slide_count").sum() * 100).round(2).alias("slide_pct"),
+            (pl.col("tile_count") / pl.col("tile_count").sum() * 100).round(2).alias("tile_pct")
         )
-        .sort(by=["t_count"], descending=True)
+        .sort(by=["tile_count"], descending=True)
     )
 
     per_split = per_split.rename({"split": "set"})
@@ -170,20 +170,20 @@ def _(overall, pl, slide_split_join_df):
         slide_split_join_df
         .group_by(["category", "split"])
         .agg([
-            pl.len().alias("s_count"),
-            pl.col("tile_count").min().alias("t_min"),
-            pl.col("tile_count").max().alias("t_max"),
-            pl.col("tile_count").mean().round(0).alias("t_avg"),
-            pl.col("tile_count").std().round(0).alias("t_std"),
-            pl.col("tile_count").median().alias("t_median"),
-            pl.col("tile_count").sum().alias("t_count"),
+            pl.len().alias("slide_count"),
+            pl.col("tile_count").min().alias("tile_min"),
+            pl.col("tile_count").max().alias("tile_max"),
+            pl.col("tile_count").mean().round(0).alias("tile_avg"),
+            pl.col("tile_count").std().round(0).alias("tile_std"),
+            pl.col("tile_count").median().alias("tile_median"),
+            pl.col("tile_count").sum().alias("tile_count"),
         ])
         .with_columns(
-            (pl.col("s_count") / pl.col("s_count").sum() * 100).round(2).alias("s_pct"),
-            (pl.col("t_count") / pl.col("t_count").sum() * 100).round(2).alias("t_pct"),
+            (pl.col("slide_count") / pl.col("slide_count").sum() * 100).round(2).alias("slide_pct"),
+            (pl.col("tile_count") / pl.col("tile_count").sum() * 100).round(2).alias("tile_pct"),
             pl.format("{}_{}", pl.col("category"), pl.col("split")).alias("set")
         )
-        .sort(by=["t_count"], descending=True)
+        .sort(by=["tile_count"], descending=True)
     )
 
     per_category_split.drop_in_place("category")
@@ -196,12 +196,12 @@ def _(overall, pl, slide_split_join_df):
 
 @app.cell
 def _(overall, per_category, per_category_split, per_split, pl):
-    # All Slide Type Information
+    # All Slide Tile Information
 
     all_slide_metrics_df = pl.concat([overall, per_category, per_split, per_category_split])
 
     all_slide_metrics_df
-    return
+    return (all_slide_metrics_df,)
 
 
 @app.cell
@@ -223,42 +223,123 @@ def _(combined_df, pl):
     # Overall Tile Tumor Percentage Stats
 
     tile_stats = combined_df["tumor_percentage"]
-    overall_tile = pl.DataFrame({
+    overall_tumor = pl.DataFrame({
         "set": ["ALL"],
-        "min": [round(tile_stats.min(), 2)],
-        "max": [round(tile_stats.max(), 2)],
-        "avg": [round(tile_stats.mean(), 2)],
-        "std": [round(tile_stats.std(), 2)],
-        "median": [round(tile_stats.median(), 2)],
+        "tumor_min": [round(tile_stats.min(), 2)],
+        "tumor_max": [round(tile_stats.max(), 2)],
+        "tumor_avg": [round(tile_stats.mean(), 2)],
+        "tumor_std": [round(tile_stats.std(), 2)],
+        "tumor_median": [round(tile_stats.median(), 2)],
     })
 
 
-    overall_tile
-    return
+    overall_tumor
+    return (overall_tumor,)
 
 
 @app.cell
-def _(combined_df, pl):
+def _(combined_df, overall_tumor, pl):
+    # Per Category Tile Tumor Percentage Stats
+
+    per_category_tumor = (
+        combined_df
+        .group_by("category")
+        .agg([
+            pl.col("tumor_percentage").min().round(2).alias("tumor_min"),
+            pl.col("tumor_percentage").max().round(2).alias("tumor_max"),
+            pl.col("tumor_percentage").mean().round(2).alias("tumor_avg"),
+            pl.col("tumor_percentage").std().round(2).alias("tumor_std"),
+            pl.col("tumor_percentage").median().round(2).alias("tumor_median"),
+        ])
+        .with_columns(
+        )
+        .sort(by=["category"], descending=True)
+    )
+
+    per_category_tumor = per_category_tumor.rename({"category": "set"})
+    per_category_tumor = per_category_tumor.select(overall_tumor.columns)
+
+    per_category_tumor
+    return (per_category_tumor,)
+
+
+@app.cell
+def _(combined_df, overall_tumor, pl):
     # Per Split Set Tile Tumor Percentage Stats
 
-    per_split_tile = (
+    per_split_tumor = (
         combined_df
         .group_by("split")
         .agg([
-            pl.col("tumor_percentage").min().round(2).alias("min"),
-            pl.col("tumor_percentage").max().round(2).alias("max"),
-            pl.col("tumor_percentage").mean().round(2).alias("avg"),
-            pl.col("tumor_percentage").std().round(2).alias("std"),
-            pl.col("tumor_percentage").median().round(2).alias("median"),
+            pl.col("tumor_percentage").min().round(2).alias("tumor_min"),
+            pl.col("tumor_percentage").max().round(2).alias("tumor_max"),
+            pl.col("tumor_percentage").mean().round(2).alias("tumor_avg"),
+            pl.col("tumor_percentage").std().round(2).alias("tumor_std"),
+            pl.col("tumor_percentage").median().round(2).alias("tumor_median"),
+        ])
+        .sort(by=["split"], descending=True)
+    )
+
+    per_split_tumor = per_split_tumor.rename({"split": "set"})
+    per_split_tumor = per_split_tumor.select(overall_tumor.columns)
+
+    per_split_tumor
+    return (per_split_tumor,)
+
+
+@app.cell
+def _(combined_df, overall_tumor, pl):
+    # Per Category & Split Set Tile Tumor Percentage Stats
+
+    per_category_split_tumor = (
+        combined_df
+        .group_by(["category", "split"])
+        .agg([
+            pl.col("tumor_percentage").min().round(2).alias("tumor_min"),
+            pl.col("tumor_percentage").max().round(2).alias("tumor_max"),
+            pl.col("tumor_percentage").mean().round(2).alias("tumor_avg"),
+            pl.col("tumor_percentage").std().round(2).alias("tumor_std"),
+            pl.col("tumor_percentage").median().round(2).alias("tumor_median"),
         ])
         .with_columns(
+            pl.format("{}_{}", pl.col("category"), pl.col("split")).alias("set")
         )
         .sort(by=["split"], descending=True)
     )
 
-    per_split_tile = per_split_tile.rename({"split": "set"})
+    per_category_split_tumor = per_category_split_tumor.select(overall_tumor.columns)
 
-    per_split_tile
+    per_category_split_tumor
+    return (per_category_split_tumor,)
+
+
+@app.cell
+def _(
+    overall_tumor,
+    per_category_split_tumor,
+    per_category_tumor,
+    per_split_tumor,
+    pl,
+):
+    # All Tumor Tile Information
+
+    all_tumor_metrics_df = pl.concat([overall_tumor, per_category_tumor, per_split_tumor, per_category_split_tumor])
+
+    all_tumor_metrics_df
+    return (all_tumor_metrics_df,)
+
+
+@app.cell
+def _(mo):
+    mo.md(r"""# Combined Metrics""")
+    return
+
+
+@app.cell
+def _(all_slide_metrics_df, all_tumor_metrics_df):
+    final_df = all_slide_metrics_df.join(all_tumor_metrics_df, on="set")
+                                     
+    final_df                                 
     return
 
 

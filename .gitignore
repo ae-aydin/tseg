@@ -37,11 +37,13 @@ env/
 venv/
 
 # Added
+__marimo__/
 .ipynb_checkpoints/
 .ruff_cache/
 .zed/
 *.pt
 wandb/
-temp_scripts/
-temp_dataset/
+temp-scripts/
+temp-dataset/
+temp-runs/
 TODO

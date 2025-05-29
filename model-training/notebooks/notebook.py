@@ -241,9 +241,9 @@ def _(slide_split_join_df, tiles_df):
 
 @app.cell
 def _(combined_df, pl):
-    # Overall Tile Tumor Percentage Stats
+    # Overall Tile Tumor Fraction Stats
 
-    tile_stats = combined_df["tumor_percentage"]
+    tile_stats = combined_df["tumor_frac"]
     overall_tumor = pl.DataFrame(
         {
             "set": ["ALL"],
@@ -261,17 +261,17 @@ def _(combined_df, pl):
 
 @app.cell
 def _(combined_df, overall_tumor, pl):
-    # Per Category Tile Tumor Percentage Stats
+    # Per Category Tile Tumor Fraction Stats
 
     per_category_tumor = (
         combined_df.group_by("category")
         .agg(
             [
-                pl.col("tumor_percentage").min().round(2).alias("tumor_min"),
-                pl.col("tumor_percentage").max().round(2).alias("tumor_max"),
-                pl.col("tumor_percentage").mean().round(2).alias("tumor_avg"),
-                pl.col("tumor_percentage").std().round(2).alias("tumor_std"),
-                pl.col("tumor_percentage").median().round(2).alias("tumor_median"),
+                pl.col("tumor_frac").min().round(2).alias("tumor_min"),
+                pl.col("tumor_frac").max().round(2).alias("tumor_max"),
+                pl.col("tumor_frac").mean().round(2).alias("tumor_avg"),
+                pl.col("tumor_frac").std().round(2).alias("tumor_std"),
+                pl.col("tumor_frac").median().round(2).alias("tumor_median"),
             ]
         )
         .with_columns()
@@ -287,17 +287,17 @@ def _(combined_df, overall_tumor, pl):
 
 @app.cell
 def _(combined_df, overall_tumor, pl):
-    # Per Split Set Tile Tumor Percentage Stats
+    # Per Split Set Tile Tumor Fraction Stats
 
     per_split_tumor = (
         combined_df.group_by("split")
         .agg(
             [
-                pl.col("tumor_percentage").min().round(2).alias("tumor_min"),
-                pl.col("tumor_percentage").max().round(2).alias("tumor_max"),
-                pl.col("tumor_percentage").mean().round(2).alias("tumor_avg"),
-                pl.col("tumor_percentage").std().round(2).alias("tumor_std"),
-                pl.col("tumor_percentage").median().round(2).alias("tumor_median"),
+                pl.col("tumor_frac").min().round(2).alias("tumor_min"),
+                pl.col("tumor_frac").max().round(2).alias("tumor_max"),
+                pl.col("tumor_frac").mean().round(2).alias("tumor_avg"),
+                pl.col("tumor_frac").std().round(2).alias("tumor_std"),
+                pl.col("tumor_frac").median().round(2).alias("tumor_median"),
             ]
         )
         .sort(by=["split"], descending=True)
@@ -312,17 +312,17 @@ def _(combined_df, overall_tumor, pl):
 
 @app.cell
 def _(combined_df, overall_tumor, pl):
-    # Per Category & Split Set Tile Tumor Percentage Stats
+    # Per Category & Split Set Tile Tumor Fraction Stats
 
     per_category_split_tumor = (
         combined_df.group_by(["category", "split"])
         .agg(
             [
-                pl.col("tumor_percentage").min().round(2).alias("tumor_min"),
-                pl.col("tumor_percentage").max().round(2).alias("tumor_max"),
-                pl.col("tumor_percentage").mean().round(2).alias("tumor_avg"),
-                pl.col("tumor_percentage").std().round(2).alias("tumor_std"),
-                pl.col("tumor_percentage").median().round(2).alias("tumor_median"),
+                pl.col("tumor_frac").min().round(2).alias("tumor_min"),
+                pl.col("tumor_frac").max().round(2).alias("tumor_max"),
+                pl.col("tumor_frac").mean().round(2).alias("tumor_avg"),
+                pl.col("tumor_frac").std().round(2).alias("tumor_std"),
+                pl.col("tumor_frac").median().round(2).alias("tumor_median"),
             ]
         )
         .with_columns(

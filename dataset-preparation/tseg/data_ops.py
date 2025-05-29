@@ -94,8 +94,8 @@ def extract_tile_info(source: Path, suffix: str = "label", ext: str = "png") -> 
             }
 
             full_mask_path = slide_dir_path / entry["relative_mask_path"]
-            entry["tumor_percentage"] = str(
-                image_ops.calculate_tumor_percentage(full_mask_path)
+            entry["tumor_frac"] = str(
+                image_ops.calculate_tumor_frac(full_mask_path)
             )
             entry["image_size"] = str(image_ops.get_size(item))
 

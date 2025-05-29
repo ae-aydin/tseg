@@ -22,13 +22,13 @@ def morph_mask(
     cv2.imwrite(str(target / source.name), binary_mask)
 
 
-def calculate_tumor_percentage(source: Path) -> float:
+def calculate_tumor_frac(source: Path) -> float:
     mask_array = cv2.imread(str(source))
     mask_array = cv2.cvtColor(mask_array, cv2.COLOR_BGR2GRAY)
     tumor_pixels = cv2.countNonZero(mask_array)
     total_pixels = mask_array.size
-    tumor_percentage = (tumor_pixels / total_pixels) if total_pixels > 0 else 0.0
-    return tumor_percentage
+    tumor_frac = (tumor_pixels / total_pixels) if total_pixels > 0 else 0.0
+    return tumor_frac
 
 
 def get_size(source: Path) -> int:

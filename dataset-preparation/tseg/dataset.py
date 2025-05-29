@@ -39,7 +39,9 @@ def train_test_split(
         use_yolo_format (bool): Include YOLO compatible format.
     """
     dirs = create_dataset_folders(target)
-    split_info_df = data_ops.split_tiles(source, train_ratio, val_ratio, dirs["metadata"])
+    split_info_df = data_ops.split_tiles(
+        source, train_ratio, val_ratio, dirs["metadata"]
+    )
     data_ops.construct_dataset(source, split_info_df, dirs)
     if use_yolo_format:
         raise NotImplementedError

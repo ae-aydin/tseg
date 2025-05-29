@@ -36,7 +36,7 @@ MANIFEST
 env/
 venv/
 
-# Added
+# Extra
 __marimo__/
 .ipynb_checkpoints/
 .ruff_cache/
@@ -46,4 +46,7 @@ wandb/
 temp-scripts/
 temp-dataset/
 temp-runs/
+temp/
+mlruns/
+mlartifacts/
 TODO

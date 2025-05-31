@@ -1,26 +1,7 @@
-import segmentation_models_pytorch as smp
-
-
-def get_smp_model(
-    arch: str = "unet",
-    backbone: str = "mobilenet_v2",
-    weights: str = "imagenet",
-):
-    return smp.create_model(
-        arch=arch,
-        encoder_name=backbone,
-        encoder_weights=weights,
-        encoder_depth=3,
-        decoder_channels=[128, 64, 16],
-        in_channels=3,
-        classes=1,
-    )
-
-
 class EarlyStopping:
     def __init__(
         self,
-        patience: int = 5,
+        patience: int = 10,
         min_delta: float = 0.0,
         mode: str = "min",
         verbose: bool = True,

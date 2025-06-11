@@ -1,6 +1,8 @@
 import albumentations as A
 import cv2
 
+from .stain import MacenkoAugment
+
 
 class HeavyAugment:
     def __init__(self, img_size: int = 512):
@@ -8,35 +10,44 @@ class HeavyAugment:
         self.transform = A.Compose(
             [
                 A.Resize(self.img_size, self.img_size, interpolation=cv2.INTER_AREA),
-                # Geometric transforms - more aggressive
-                A.RandomRotate90(p=1.0),
-                A.HorizontalFlip(p=0.5),
-                A.VerticalFlip(p=0.5),
-                # A.Affine(shift_limit=0.2, scale_limit=0.2, rotate_limit=45, border_mode=0, p=0.7),
-                # A.ElasticTransform(alpha=120, sigma=120 * 0.05, p=0.5),
-                # A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.5),
-                # A.OpticalDistortion(distort_limit=0.3, p=0.5),
-                # Color and staining variations - more aggressive
+                # Color transforms
+                MacenkoAugment(p=0.5),
                 A.OneOf(
                     [
-                        A.RandomGamma(gamma_limit=(80, 120), p=1.0),
-                        A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=1.0),
                         A.HueSaturationValue(
-                            hue_shift_limit=20,
-                            sat_shift_limit=30,
-                            val_shift_limit=20,
+                            hue_shift_limit=10,
+                            sat_shift_limit=20,
+                            val_shift_limit=10,
                             p=1.0,
                         ),
                         A.RGBShift(
-                            r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, p=1.0
+                            r_shift_limit=10, g_shift_limit=10, b_shift_limit=10, p=1.0
                         ),
                         A.ColorJitter(
                             brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=1.0
                         ),
+                        A.CLAHE(clip_limit=2.0, tile_grid_size=(8, 8), p=1.0),
                     ],
-                    p=0.8,
+                    p=0.25,
                 ),
-                # Quality variations - more aggressive
+                A.OneOf(
+                    [
+                        A.RandomBrightnessContrast(
+                            brightness_limit=0.1, contrast_limit=0.1, p=1.0
+                        ),
+                        A.RandomGamma(gamma_limit=(90, 110), p=1.0),
+                    ],
+                    p=0.25,
+                ),
+                # Geometric transforms
+                A.RandomRotate90(p=1.0),
+                A.HorizontalFlip(p=0.5),
+                A.VerticalFlip(p=0.5),
+                # A.Affine(shift_limit=0.2, scale_limit=0.2, rotate_limit=45, border_mode=0, p=0.7),
+                A.ElasticTransform(alpha=120, sigma=120 * 0.05, p=0.5),
+                A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.5),
+                A.OpticalDistortion(distort_limit=0.3, p=0.5),
+                # Quality variations
                 A.OneOf(
                     [
                         A.GaussNoise(p=1.0),
@@ -66,15 +77,6 @@ class HeavyAugment:
                         ),
                     ],
                     p=0.5,
-                ),
-                # Additional histopathology-specific augmentations
-                A.OneOf(
-                    [
-                        A.RandomBrightnessContrast(
-                            brightness_limit=0.2, contrast_limit=0.2, p=1.0
-                        ),
-                    ],
-                    p=0.3,
                 ),
                 # Normalize and convert to tensor
                 A.Normalize(),

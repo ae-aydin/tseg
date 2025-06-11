@@ -2,22 +2,18 @@ import segmentation_models_pytorch as smp
 from torch import Tensor
 
 
-# Standard for segmentation, especially in medical imaging, when overlap is the main concern
 def dice_loss():
     return smp.losses.DiceLoss(mode="binary")
 
 
-# Use when you have extreme class imbalance and want to focus on hard examples
 def focal_loss(gamma: float = 2.0):
     return smp.losses.FocalLoss(mode="binary", gamma=gamma)
 
 
-# Use when you want to control the trade-off between false positives and false negatives.
 def tversky_loss(alpha: float = 0.5, beta: float = 0.5):
     return smp.losses.TverskyLoss(mode="binary", alpha=alpha, beta=beta)
 
 
-# Standard BCE loss, can use pos_weight to handle class imbalance
 def bce_loss(pos_weight: Tensor | None = None):
     return smp.losses.SoftBCEWithLogitsLoss(pos_weight=pos_weight)
 

@@ -1,4 +1,5 @@
 import numpy as np
+from skimage import filters, morphology
 
 
 def unnormalize(
@@ -10,3 +11,24 @@ def unnormalize(
     img = np.clip(img, 0, 1)
     img = (img * 255).astype(np.uint8)
     return img
+
+
+def post_process_image(
+    pred: np.ndarray,
+    min_object_size: int = 50,
+    smoothing_kernel_size: int = 3,
+    closing_kernel_size: int = 5,
+) -> np.ndarray:
+    enhanced = morphology.remove_small_objects(
+        pred.astype(bool), min_size=min_object_size
+    )
+
+    kernel = morphology.disk(closing_kernel_size)
+    enhanced = morphology.binary_opening(enhanced, kernel)
+
+    enhanced = filters.gaussian(enhanced.astype(float), sigma=smoothing_kernel_size)
+    enhanced = (enhanced > 0.5).astype(bool)
+
+    enhanced = morphology.remove_small_objects(enhanced, min_size=min_object_size)
+
+    return enhanced.astype(np.float32)

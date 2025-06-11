@@ -5,21 +5,26 @@ import albumentations as A
 from .base import BaseDataset
 
 
-class FilteredDataset(BaseDataset):
+class SlideTileDataset(BaseDataset):
     def __init__(
         self,
         source: Path,
         df,
-        category: str,
+        category: str | None = None,
         min_tumor_frac: float = 0.01,
         transform: A.Compose | None = None,
         img_size: int = 512,
     ):
-        filtered_df = (
-            df[(df["category"] == category) & (df["tumor_frac"] >= min_tumor_frac)]
-            .copy()
-            .reset_index(drop=True)
-        )
+        if category is not None:
+            filtered_df = (
+                df[(df["category"] == category) & (df["tumor_frac"] >= min_tumor_frac)]
+                .copy()
+                .reset_index(drop=True)
+            )
+        else:
+            filtered_df = (
+                df[df["tumor_frac"] >= min_tumor_frac].copy().reset_index(drop=True)
+            )
 
         super().__init__(source, filtered_df, transform, img_size)
         self.category = category

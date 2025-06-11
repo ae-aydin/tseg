@@ -44,3 +44,15 @@ def read_tile_metadata(source: Path) -> pd.DataFrame:
     combined_metadata_df = combined_metadata_df.to_pandas()
     combined_metadata_df = bin_tumor_fracs(combined_metadata_df)
     return combined_metadata_df
+
+
+def set_img_tiled_to_train(df: pd.DataFrame) -> pd.DataFrame:
+    mask = (df["category"] == "img_tiled") & (df["split"] != "train")
+    df.loc[mask, "split"] = "train"
+    return df
+
+
+def save(df: pd.DataFrame, directory: Path, filename: str) -> None:
+    directory.mkdir(parents=True, exist_ok=True)
+    file_path = directory / filename
+    df.to_csv(file_path, index=False)

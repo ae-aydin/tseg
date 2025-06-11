@@ -1,4 +1,5 @@
 import shutil
+import warnings
 from datetime import datetime
 from pathlib import Path
 
@@ -6,11 +7,11 @@ import mlflow
 import torch
 import typer
 from augment import BasicAugment, HeavyAugment
-from dataset import FilteredDataset, read_tile_metadata
-from losses import tversky_loss
+from dataset import SlideTileDataset, read_tile_metadata, save, set_img_tiled_to_train
+from losses import dice_focal_loss
 from metrics import get_segmentation_metrics
 from model import EarlyStopping, get_smp_model
-from sampler import LimitedSampler
+from sampler import SlideBalancedSampler
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from torch.utils.data import DataLoader
@@ -20,18 +21,38 @@ from utils import (
     TrainingArguments,
     save_predictions,
     set_seed,
-    visualize_training_samples,
+    save_training_samples,
 )
 
+warnings.filterwarnings("ignore")
 
-def train_epoch(model, loader, optimizer, criterion, device, scaler):
+
+def train_epoch(model, loader1, loader2, optimizer, criterion, device, scaler):
+    assert len(loader1) == len(loader2)
+    total_len = len(loader1)
+
     model.train()
     total_loss = 0
+    pbar = tqdm(
+        zip(loader1, loader2),
+        desc="Training",
+        ncols=100,
+        total=total_len,
+    )
+    for batch1, batch2 in pbar:
+        # Combine batches
+        images = torch.cat([batch1["image"], batch2["image"]], dim=0).to(
+            device, non_blocking=True
+        )
+        masks = torch.cat([batch1["mask"], batch2["mask"]], dim=0).to(
+            device, non_blocking=True
+        )
 
-    pbar = tqdm(loader, desc="Training", ncols=100)
-    for batch in pbar:
-        images = batch["image"].to(device, non_blocking=True)
-        masks = batch["mask"].to(device, non_blocking=True)
+        # Shuffle
+        batch_size = images.size(0)
+        shuffle_indices = torch.randperm(batch_size, device=device)
+        images = images[shuffle_indices]
+        masks = masks[shuffle_indices]
 
         optimizer.zero_grad()
         with torch.autocast(device_type=device.type):
@@ -45,7 +66,7 @@ def train_epoch(model, loader, optimizer, criterion, device, scaler):
         total_loss += loss.item()
         pbar.set_postfix({"loss": f"{loss.item():.3f}"})
 
-    return total_loss / len(loader)
+    return total_loss / total_len
 
 
 @torch.no_grad()
@@ -54,7 +75,9 @@ def validate(
 ) -> tuple[float, dict[str, float]]:
     model.eval()
     total_loss = 0
-    metrics_sum = {"dice": 0.0, "iou": 0.0, "precision": 0.0, "recall": 0.0}
+
+    all_outputs = []
+    all_masks = []
 
     pbar = tqdm(loader, desc="Validation", ncols=100)
     for batch in pbar:
@@ -65,19 +88,18 @@ def validate(
             outputs = model(images)
             loss = criterion(outputs, masks)
 
-            batch_metrics = get_segmentation_metrics(outputs, masks, confidence)
-            for k, v in batch_metrics.items():
-                metrics_sum[k] += v
-
         total_loss += loss.item()
-        pbar.set_postfix(
-            {"loss": f"{loss.item():.3f}", "dice": f"{batch_metrics['dice']:.3f}"}
-        )
 
-    num_batches = len(loader)
-    avg_metrics = {k: v / num_batches for k, v in metrics_sum.items()}
+        all_outputs.append(outputs.cpu())
+        all_masks.append(masks.cpu())
 
-    return total_loss / num_batches, avg_metrics
+    all_outputs = torch.cat(all_outputs)
+    all_masks = torch.cat(all_masks)
+
+    epoch_metrics = get_segmentation_metrics(all_outputs, all_masks, confidence)
+    avg_loss = total_loss / len(loader)
+
+    return avg_loss, epoch_metrics
 
 
 def main(
@@ -123,49 +145,79 @@ def main(
     mlflow.set_experiment("tumor-segmentation")
 
     metadata_df = read_tile_metadata(args.source / "metadata")
+    metadata_df = set_img_tiled_to_train(metadata_df)  # optional for hpa training
+    save(metadata_df, args.target / "sheets", "metadata.csv")
+
     train_df = metadata_df[metadata_df["split"] == "train"]
+    save(train_df, args.target / "sheets", "train.csv")
+
+    train_hospital_df = train_df[train_df["category"] == "wsi_tiled"]
+    save(train_hospital_df, args.target / "sheets", "train_hospital.csv")
+
+    train_hpa_df = train_df[train_df["category"] == "img_tiled"]
+    save(train_hpa_df, args.target / "sheets", "train_hpa.csv")
+
     val_df = metadata_df[metadata_df["split"] == "val"]
+    save(val_df, args.target / "sheets", "val.csv")
 
     # Training Dataset
-    train_dataset = FilteredDataset(
+    train_hospital_dataset = SlideTileDataset(
         source=args.source,
-        df=train_df,
-        category="wsi_tiled",
-        min_tumor_frac=0.01,
+        df=train_hospital_df,
         transform=HeavyAugment(args.img_size),
         img_size=args.img_size,
     )
-    print("Training Set:")
-    train_dataset.print_tiles_per_slide()
 
-    visualize_training_samples(
-        dataset=train_dataset,
-        target=args.target / "training_visualizations",
+    save_training_samples(
+        dataset=train_hospital_dataset,
+        target=args.target / "training_samples",
+        suffix="hospital",
+    )
+
+    train_hpa_dataset = SlideTileDataset(
+        source=args.source,
+        df=train_hpa_df,
+        transform=HeavyAugment(args.img_size),
+        img_size=args.img_size,
+    )
+
+    save_training_samples(
+        dataset=train_hpa_dataset, target=args.target / "training_samples", suffix="hpa"
     )
 
     # Validation Dataset
-    val_dataset = FilteredDataset(
+    val_dataset = SlideTileDataset(
         source=args.source,
         df=val_df,
         category="wsi_tiled",
-        min_tumor_frac=0.01,
         transform=BasicAugment(args.img_size),
         img_size=args.img_size,
     )
-    print("Validation Set:")
-    val_dataset.print_tiles_per_slide()
 
     # Sampler
-    train_sampler = LimitedSampler(
-        dataset=train_dataset,
-        max_tiles_per_slide=train_dataset.get_min_slide_tile_count(),
+    train_sampler = SlideBalancedSampler(
+        dataset=train_hospital_dataset, samples_per_epoch=3072
     )
 
-    # Dataloaders
+    train_hpa_sampler = SlideBalancedSampler(
+        dataset=train_hpa_dataset, samples_per_epoch=1024
+    )
+
+    # Loader
     train_loader = DataLoader(
-        train_dataset,
-        batch_size=args.batch_size,
+        train_hospital_dataset,
+        batch_size=(args.batch_size // 4) * 3,
         sampler=train_sampler,
+        num_workers=4,
+        pin_memory=True,
+        persistent_workers=True,
+        prefetch_factor=2,
+    )
+
+    train_hpa_loader = DataLoader(
+        train_hpa_dataset,
+        batch_size=args.batch_size // 4,
+        sampler=train_hpa_sampler,
         num_workers=4,
         pin_memory=True,
         persistent_workers=True,
@@ -224,7 +276,7 @@ def main(
                 return args.lr * (epoch + 1) / args.warmup_epochs
             return scheduler.get_last_lr()[0]
 
-        criterion = tversky_loss()
+        criterion = dice_focal_loss()
         scaler = torch.GradScaler()
         early_stopping = EarlyStopping(
             patience=args.es_patience, min_delta=args.es_delta, mode="min", verbose=True
@@ -242,6 +294,7 @@ def main(
             train_loss = train_epoch(
                 model,
                 train_loader,
+                train_hpa_loader,
                 optimizer,
                 criterion,
                 device,

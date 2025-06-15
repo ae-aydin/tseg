@@ -12,6 +12,11 @@ def load_yaml(source: Path = CONFIG_PATH) -> dict:
     return data
 
 
+def save_yaml(data: dict, target: Path, filename: str):
+    with open(target / filename, "w") as f:
+        yaml.dump(data, f, default_flow_style=False)
+
+
 def save_csv(entries: list, target: Path) -> None:
     df = pl.DataFrame(entries)
     df.write_csv(target)

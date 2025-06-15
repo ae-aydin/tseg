@@ -46,12 +46,6 @@ def read_tile_metadata(source: Path) -> pd.DataFrame:
     return combined_metadata_df
 
 
-def set_img_tiled_to_train(df: pd.DataFrame) -> pd.DataFrame:
-    mask = (df["category"] == "img_tiled") & (df["split"] != "train")
-    df.loc[mask, "split"] = "train"
-    return df
-
-
 def save(df: pd.DataFrame, directory: Path, filename: str) -> None:
     directory.mkdir(parents=True, exist_ok=True)
     file_path = directory / filename

@@ -28,7 +28,7 @@ class HeavyAugment:
                         ),
                         A.CLAHE(clip_limit=2.0, tile_grid_size=(8, 8), p=1.0),
                     ],
-                    p=0.25,
+                    p=0.3,
                 ),
                 A.OneOf(
                     [
@@ -37,16 +37,21 @@ class HeavyAugment:
                         ),
                         A.RandomGamma(gamma_limit=(90, 110), p=1.0),
                     ],
-                    p=0.25,
+                    p=0.3,
                 ),
                 # Geometric transforms
                 A.RandomRotate90(p=1.0),
                 A.HorizontalFlip(p=0.5),
                 A.VerticalFlip(p=0.5),
-                # A.Affine(shift_limit=0.2, scale_limit=0.2, rotate_limit=45, border_mode=0, p=0.7),
-                A.ElasticTransform(alpha=120, sigma=120 * 0.05, p=0.5),
-                A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.5),
-                A.OpticalDistortion(distort_limit=0.3, p=0.5),
+                A.Affine(
+                    translate_percent=(-0.2, 0.2),
+                    scale=(-0.2, 0.2),
+                    rotate=(-45, 45),
+                    p=0.3,
+                ),
+                A.ElasticTransform(alpha=120, sigma=120 * 0.05, p=0.3),
+                A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.3),
+                A.OpticalDistortion(distort_limit=0.3, p=0.3),
                 # Quality variations
                 A.OneOf(
                     [
@@ -76,7 +81,7 @@ class HeavyAugment:
                             p=1.0,
                         ),
                     ],
-                    p=0.5,
+                    p=0.3,
                 ),
                 # Normalize and convert to tensor
                 A.Normalize(),

@@ -5,9 +5,10 @@ from pathlib import Path
 import numpy as np
 import polars as pl
 from loguru import logger
+from sklearn.model_selection import KFold, train_test_split
 from tqdm import tqdm
 
-from .data_ops import categorize_tiles, extract_slide_info, extract_tile_info
+from .data_ops import extract_slide_info, extract_tile_info
 from .utils import add_suffix_to_dir_items, pad_str, save_csv, save_yaml
 
 
@@ -41,99 +42,127 @@ class DatasetDirectory:
             val.mkdir(parents=True, exist_ok=True)
 
 
-def _construct_dataset_list(split: str, tiles: list) -> list:
-    """Helper function for split_tiles."""
-    return [
-        {"full_path": path, "slide_name": path.name.split("|")[1], "split": split}
-        for path in tiles
-    ]
-
-
-def split_tiles(
-    source: Path, train_ratio: float, val_ratio: float, save_dir: Path, seed: int = 42
-) -> pl.DataFrame:
-    """Split tiled WSI slides into train-val-test sets virtually. Extract slide and split metadata."""
-    np.random.seed(seed)
-
-    categories = categorize_tiles(source)
-    logger.info("Creating slide and train-test-split metadata")
-    create_test_set = False if np.isclose(train_ratio + val_ratio, 1) else True
-
-    split_entries, slide_info_entries = [], []
-    for tile_folders in categories.values():
-        np.random.shuffle(tile_folders)
-        slide_info_entries.extend(extract_slide_info(tile_folders))
-
-        n_train = int(round(len(tile_folders) * train_ratio))
-        n_val = int(round(len(tile_folders) * val_ratio))
-
-        split_entries.extend(_construct_dataset_list("train", tile_folders[:n_train]))
-
-        if create_test_set:
-            split_entries.extend(
-                _construct_dataset_list("val", tile_folders[n_train : n_train + n_val])
-            )
-            split_entries.extend(
-                _construct_dataset_list("test", tile_folders[n_train + n_val :])
-            )
-        else:
-            split_entries.extend(_construct_dataset_list("val", tile_folders[n_train:]))
-
-    # Save slide information
-    save_csv(slide_info_entries, save_dir / "slide_info.csv")
-    return pl.DataFrame(split_entries)
-
-
-def construct_dataset(
-    source: Path, split_info_df: pl.DataFrame, dirs: DatasetDirectory
-) -> None:
+def construct_dataset(source: Path, dirs: DatasetDirectory) -> None:
     """Copy files according to CSV file containing split information. Extracts tile metadata."""
     logger.info(f"Started constructing dataset at {dirs.parent}")
-    all_tile_info_entries = []
-
+    slide_info_entries, all_tile_info_entries = [], []
+    slide_folders = list(source.iterdir())
     pbar = tqdm(
-        split_info_df.iter_rows(named=True),
-        total=len(split_info_df),
+        slide_folders,
+        total=len(slide_folders),
         position=0,
         leave=True,
         ncols=100,
     )
-    for row_dict in pbar:
-        current_slide_name = row_dict["slide_name"]
+
+    for slide_folder_path in pbar:
+        slide_info_entries.append(extract_slide_info(slide_folder_path))
+        current_slide_name = str(slide_folder_path.name).split("|")[1]
         pbar.set_description(f"Processing Slides | {pad_str(current_slide_name)}")
 
         target_path = dirs.slides / current_slide_name
-        shutil.copytree(row_dict["full_path"], target_path)
+        shutil.copytree(slide_folder_path, target_path)
 
         add_suffix_to_dir_items(target_path / "masks")
         tile_info_entries = extract_tile_info(target_path)
         all_tile_info_entries.extend(tile_info_entries)
 
-    # Remove temporary full path
-    split_info_df.drop_in_place("full_path")
-
-    # Save split information
-    split_info_df.write_csv(dirs.metadata / "split_info.csv")
-
     # Save tile information
     save_csv(all_tile_info_entries, dirs.metadata / "tile_info.csv")
+    save_csv(slide_info_entries, dirs.metadata / "slide_info.csv")
 
     logger.info(f"Dataset constructed at {dirs.parent}")
-    logger.info(f"Metadata saved at {dirs.metadata}")
+    logger.info(f"Slide and tile metadata saved at {dirs.metadata}")
 
 
-def train_test_split(
+def split_tiles(
+    dirs: DatasetDirectory,
+    train_ratio: float,
+    hpa_train_only: bool = True,
+    create_dev: bool = True,
+    dev_test_ratio: float = 0.5,
+    generate_cv: bool = True,
+    n_folds: int = 5,
+    seed: int = 42,
+):
+    np.random.seed(seed)
+
+    info = pl.read_csv(dirs.metadata / "slide_info.csv")
+    wsi = info.filter(pl.col("category") == "wsi_tiled")["slide_name"].to_list()
+    hpa = info.filter(pl.col("category") == "img_tiled")["slide_name"].to_list()
+    base = wsi if hpa_train_only else wsi + hpa
+
+    train, remainder = train_test_split(base, train_size=train_ratio, random_state=seed)
+    val, test = (
+        train_test_split(remainder, train_size=dev_test_ratio, random_state=seed)
+        if create_dev
+        else ([], remainder)
+    )
+
+    split_dict = {}
+    split_dict.update({s: "train" for s in train})
+    split_dict.update({s: "val" for s in val})
+    split_dict.update({s: "test" for s in test})
+    if hpa_train_only:
+        split_dict.update({s: "train" for s in hpa})
+
+    # base split
+    def write_split(path: Path, mapping: dict[str, str]) -> None:
+        pl.DataFrame(
+            {"slide_name": list(mapping), "split": [mapping[s] for s in mapping]}
+        ).write_csv(path)
+
+    write_split(dirs.metadata / "split_info.csv", split_dict)
+    logger.info(f"Split metadata saved at {dirs.metadata}")
+
+    if not generate_cv:
+        return
+
+    cv_dir = dirs.metadata / "cv"
+    cv_dir.mkdir(parents=True, exist_ok=True)
+
+    eligible = [
+        s
+        for s in split_dict
+        if split_dict[s] != "test" and (s in wsi or not hpa_train_only)
+    ]
+
+    kfold = KFold(n_splits=n_folds, shuffle=True, random_state=seed)
+    for fold, (_, val_idx) in enumerate(kfold.split(eligible)):
+        fold_split = {
+            s: ("test" if split_dict[s] == "test" else "train") for s in split_dict
+        }
+        for s in (eligible[i] for i in val_idx):
+            fold_split[s] = "val"
+        write_split(cv_dir / f"split_fold_{fold}.csv", fold_split)
+    logger.info(f"K-fold cross-validation metadata saved at {cv_dir}")
+
+
+def split(
     source: Path,
     target: Path,
     train_ratio: float,
-    val_ratio: float,
-    use_yolo_format: bool,
+    hpa_train_only: bool = True,
+    create_dev: bool = True,
+    dev_test_ratio: float = 0.5,
+    generate_cv: bool = float,
+    k_folds: int = 5,
+    use_yolo_format: bool = False,
     seed: int = 42,
 ):
     if use_yolo_format:
         raise NotImplementedError
 
     dirs = DatasetDirectory(target)
+    construct_dataset(source, dirs)
     save_yaml({"seed": seed}, dirs.metadata, "seed.yaml")
-    split_info_df = split_tiles(source, train_ratio, val_ratio, dirs.metadata, seed)
-    construct_dataset(source, split_info_df, dirs)
+    split_tiles(
+        dirs,
+        train_ratio,
+        hpa_train_only,
+        create_dev,
+        dev_test_ratio,
+        generate_cv,
+        k_folds,
+        seed,
+    )

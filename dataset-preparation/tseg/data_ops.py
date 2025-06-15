@@ -1,35 +1,10 @@
 import re
 from pathlib import Path
 
-from loguru import logger
-
 from .image_ops import calculate_tumor_frac, get_size
-from .utils import load_yaml
-
-CONFIG = load_yaml()
 
 
-def categorize_tiles(tile_folders_path: Path) -> dict:
-    """Categorize tiled slide folders based on domain."""
-    logger.info("Categorizing tiled slides")
-    categorized_tile_folders = {
-        category: list(
-            filter(
-                lambda x: str(x.stem).split("|")[0] == category,
-                tile_folders_path.iterdir(),
-            )
-        )
-        for category in CONFIG["data_categories"]
-    }
-
-    category_details = ", ".join(
-        f"{k}: {len(v)}" for k, v in categorized_tile_folders.items()
-    )
-    logger.info(f"Categories - {category_details}")
-    return categorized_tile_folders
-
-
-def extract_slide_info(slide_folder_paths: list) -> list:
+def extract_slide_info(slide_folder_path: Path) -> list:
     """Extract slide information from slide folder name."""
     column_names = [
         "category",
@@ -43,18 +18,13 @@ def extract_slide_info(slide_folder_paths: list) -> list:
         "mask_count",
     ]
 
-    dataset_entries = []
-    for folder_path in slide_folder_paths:
-        split_folder_name = folder_path.name.split("|")
+    split_folder_name = slide_folder_path.name.split("|")
 
-        tile_count = len([*(folder_path / "images").iterdir()])
-        mask_count = len([*(folder_path / "masks").iterdir()])
-        slide_info = dict(
-            zip(column_names, split_folder_name + [tile_count, mask_count])
-        )
-        dataset_entries.append(slide_info)
+    tile_count = len([*(slide_folder_path / "images").iterdir()])
+    mask_count = len([*(slide_folder_path / "masks").iterdir()])
+    slide_info = dict(zip(column_names, split_folder_name + [tile_count, mask_count]))
 
-    return dataset_entries
+    return slide_info
 
 
 def extract_location_info(filename: str) -> dict:

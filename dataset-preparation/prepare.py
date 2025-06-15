@@ -4,15 +4,19 @@ from pathlib import Path
 import typer
 from loguru import logger
 
-from tseg import train_test_split
+from tseg import split
 
 
 def main(
     source: str,  # path containing tile folders
     target: str,  # path to create dataset folder
-    train_ratio: float = 0.6,
-    val_ratio: float = 0.2,
-    yolo_format: bool = False,  # create yolo dataset
+    train_ratio: float = 0.7,
+    hpa_train_only: bool = True,  # use all hpa slides as train
+    create_dev: bool = True,  # create validation set
+    dev_test_ratio: float = 0.5,
+    generate_cv: bool = True,  # generate k fold cross validation
+    k_folds: int = 5,
+    use_yolo_format: bool = False,  # create yolo dataset
     seed: int = -1,  # random seed for reproducibility
 ):
     logger.info("Dataset Preparation for tseg")
@@ -22,12 +26,16 @@ def main(
     else:
         logger.info(f"Using seed: {seed}")
 
-    train_test_split(
+    split(
         Path(source),
         Path(target),
         train_ratio,
-        val_ratio,
-        yolo_format,
+        hpa_train_only,
+        create_dev,
+        dev_test_ratio,
+        generate_cv,
+        k_folds,
+        use_yolo_format,
         seed,
     )
     logger.info("Finished")

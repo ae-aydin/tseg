@@ -3,10 +3,8 @@ from pathlib import Path
 import polars as pl
 import yaml
 
-CONFIG_PATH = Path("./dataset-preparation/config.yaml")
 
-
-def load_yaml(source: Path = CONFIG_PATH) -> dict:
+def load_yaml(source: Path) -> dict:
     with open(source, "r") as f:
         data = yaml.safe_load(f)
     return data
@@ -14,7 +12,7 @@ def load_yaml(source: Path = CONFIG_PATH) -> dict:
 
 def save_yaml(data: dict, target: Path, filename: str):
     with open(target / filename, "w") as f:
-        yaml.dump(data, f, default_flow_style=False)
+        yaml.dump(data, f)
 
 
 def save_csv(entries: list, target: Path) -> None:

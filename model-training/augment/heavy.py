@@ -45,7 +45,7 @@ class HeavyAugment:
                 A.VerticalFlip(p=0.5),
                 A.Affine(
                     translate_percent=(-0.2, 0.2),
-                    scale=(-0.2, 0.2),
+                    scale=(0.8, 1.2),
                     rotate=(-45, 45),
                     p=0.3,
                 ),

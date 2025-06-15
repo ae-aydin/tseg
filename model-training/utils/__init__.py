@@ -1,10 +1,11 @@
-from .misc import TestArguments, TrainingArguments, set_seed
+from .misc import ExperimentDirectory, TestArguments, TrainingArguments, set_seed
 from .visualize import (
     save_predictions,
     save_training_samples,
 )
 
 __all__ = [
+    ExperimentDirectory,
     TestArguments,
     TrainingArguments,
     set_seed,

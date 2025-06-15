@@ -41,7 +41,7 @@ def save_training_samples(
             axes[j, 1].set_title(
                 f"Mask {j + 1}\n"
                 f"Tumor: {sample['tumor_frac']:.2f}\n"
-                "Tumor Bin: {sample['tumor_bin']}"
+                f"Tumor Bin: {sample['tumor_bin']}"
             )
             axes[j, 1].axis("off")
 

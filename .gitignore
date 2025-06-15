@@ -37,16 +37,17 @@ env/
 venv/
 
 # Extra
-__marimo__/
 .ipynb_checkpoints/
 .ruff_cache/
 .zed/
-*.pt
-wandb/
+
+mlruns/
+mlartifacts/
+experiments/
 temp-scripts/
 temp-dataset/
 temp-runs/
 temp/
-mlruns/
-mlartifacts/
+
 TODO
+*.pt

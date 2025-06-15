@@ -10,7 +10,8 @@ from losses import dice_focal_loss
 from metrics import get_segmentation_metrics
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import TestArguments, save_predictions, set_seed
+from utils import ExperimentDirectory, TestArguments, save_predictions, set_seed
+from loguru import logger
 
 warnings.filterwarnings("ignore")
 
@@ -51,31 +52,33 @@ def test(
 def main(
     model_path: Path = typer.Argument(..., help="Path to trained model directory"),
     source: Path = typer.Argument(..., help="Path to dataset directory"),
-    target: Path = typer.Argument(..., help="Path to output directory"),
+    target: str = typer.Option("experiments", help="Path to output directory"),
     batch_size: int = typer.Option(32, help="Test batch size"),
     img_size: int = typer.Option(256, help="Input image size for testing"),
     conf: float = typer.Option(0.5, help="Confidence threshold"),
     seed: int = typer.Option(42, help="Random seed for reproducibility"),
     num_samples: int = typer.Option(25, help="Number of samples to visualize"),
-):
+):  
+    exp = ExperimentDirectory("tumorseg_test", Path(target))
     args = TestArguments(
         model_path=model_path,
         source=source,
-        target=target,
+        target=exp,
         batch_size=batch_size,
         img_size=img_size,
         conf=conf,
         seed=seed,
     )
 
-    args.print_args()
+    logger.add(args.target.logs / "test.log")
+    logger.info(args)
+    
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     metadata_df = read_tile_metadata(args.source / "metadata")
     test_df = metadata_df[metadata_df["split"] == "test"]
-    test_df = test_df[test_df["category"] == "wsi_tiled"]
-    save(test_df, args.target / "sheets", "test.csv")
+    save(test_df, args.target.logs, "test.csv")
 
     test_dataset = SlideTileDataset(
         source=args.source,
@@ -94,39 +97,34 @@ def main(
         prefetch_factor=2,
     )
 
-    print(f"Loading model from {model_path}")
+    logger.info(f"Loading model from {model_path}")
     model = smp.from_pretrained(args.model_path).to(device)
 
     model.eval()
-    print(f"Using device: {device}")
+    logger.info(f"Using device: {device}")
 
     criterion = dice_focal_loss()
 
-    print("\nRunning inference on test set...")
+    logger.info("Running inference on test set...")
     test_loss, test_metrics = test(model, test_loader, criterion, device, args.conf)
 
-    print("\nTest Results:")
-    print(f"Test Loss: {test_loss:.4f}")
-    print("Test Metrics:")
-    for k, v in test_metrics.items():
-        print(f"  {k}: {v:.4f}")
+    logger.success(f"Test Loss: {test_loss:.4f}")
+    logger.success("Test Metrics: " + ", ".join(f"{k}={v:.4f}" for k, v in test_metrics.items()))
+    logger.info("Saving post-processed predictions for test samples...")
 
-    print("\nSaving post-processed predictions for test samples...")
-
+    test_pred_path = args.target.predictions / "test"
     save_predictions(
         model=model,
         dataset=test_dataset,
-        target=args.target / "test_predictions",
+        target=test_pred_path,
         device=device,
         confidence=args.conf,
         num_samples=num_samples,
-        post_process=True,
+        post_process=True
     )
 
     total_saved_samples = num_samples if num_samples else len(test_dataset)
-    print(
-        f"Saved {total_saved_samples} predictions at {args.target / 'test_predictions'}"
-    )
+    logger.success(f"Saved {total_saved_samples} predictions at {test_pred_path}")
 
 
 if __name__ == "__main__":

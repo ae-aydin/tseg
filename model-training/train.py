@@ -7,7 +7,7 @@ import mlflow
 import torch
 import typer
 from augment import BasicAugment, HeavyAugment
-from dataset import SlideTileDataset, read_tile_metadata, save, set_img_tiled_to_train
+from dataset import SlideTileDataset, read_tile_metadata, save
 from losses import dice_focal_loss
 from metrics import get_segmentation_metrics
 from model import EarlyStopping, get_smp_model
@@ -18,11 +18,13 @@ from torch.utils.data import DataLoader
 from torchinfo import summary
 from tqdm import tqdm
 from utils import (
+    ExperimentDirectory,
     TrainingArguments,
     save_predictions,
     set_seed,
     save_training_samples,
 )
+from loguru import logger
 
 warnings.filterwarnings("ignore")
 
@@ -104,7 +106,7 @@ def validate(
 
 def main(
     source: Path = typer.Argument(..., help="Path to dataset directory"),
-    target: Path = typer.Argument(..., help="Path to output directory"),
+    target: str = typer.Option("experiments", help="Path to output directory"),
     batch_size: int = typer.Option(32, help="Training batch size"),
     img_size: int = typer.Option(256, help="Input image size for training"),
     conf: float = typer.Option(0.5, help="Confidence"),
@@ -114,14 +116,15 @@ def main(
     epochs: int = typer.Option(100, help="Number of training epochs"),
     es_patience: int = typer.Option(10, help="Early stopping patience"),
     es_delta: float = typer.Option(1e-4, help="Early stopping min delta"),
-    arch: str = typer.Option("unet", help="Model architecture"),
+    arch: str = typer.Option("unetplusplus", help="Model architecture"),
     backbone: str = typer.Option("efficientnet-b0", help="Backbone network"),
     weights: str = typer.Option("imagenet", help="Pretrained weights"),
     seed: int = typer.Option(42, help="Random seed for reproducibility"),
-):
+):  
+    exp = ExperimentDirectory("tumorseg", Path(target))
     args = TrainingArguments(
         source=source,
-        target=target,
+        target=exp,
         batch_size=batch_size,
         img_size=img_size,
         conf=conf,
@@ -137,41 +140,46 @@ def main(
         seed=seed,
     )
 
-    args.print_args()
+    logger.add(args.target.logs / "train.log")
+    logger.info(args)
+    
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     mlflow.set_tracking_uri("http://127.0.0.1:8080")
-    mlflow.set_experiment("tumor-segmentation")
+    mlflow.set_experiment(args.target.experiment_name)
 
     metadata_df = read_tile_metadata(args.source / "metadata")
-    metadata_df = set_img_tiled_to_train(metadata_df)  # optional for hpa training
-    save(metadata_df, args.target / "sheets", "metadata.csv")
+    save(metadata_df, args.target.logs, "metadata.csv")
 
     train_df = metadata_df[metadata_df["split"] == "train"]
-    save(train_df, args.target / "sheets", "train.csv")
+    save(train_df, args.target.logs, "train.csv")
 
-    train_hospital_df = train_df[train_df["category"] == "wsi_tiled"]
-    save(train_hospital_df, args.target / "sheets", "train_hospital.csv")
+    train_wsi_df = train_df[train_df["category"] == "wsi_tiled"]
+    save(train_wsi_df, args.target.logs, "train_hospital.csv")
 
     train_hpa_df = train_df[train_df["category"] == "img_tiled"]
-    save(train_hpa_df, args.target / "sheets", "train_hpa.csv")
+    save(train_hpa_df, args.target.logs, "train_hpa.csv")
 
     val_df = metadata_df[metadata_df["split"] == "val"]
-    save(val_df, args.target / "sheets", "val.csv")
+    save(val_df, args.target.logs, "val.csv")
+    
+    test_df = metadata_df[metadata_df["split"] == "test"]
+    save(test_df, args.target.logs, "test.csv")
+    logger.info(f"Individual sets saved at {args.target.logs}")
 
     # Training Dataset
-    train_hospital_dataset = SlideTileDataset(
+    train_wsi_dataset = SlideTileDataset(
         source=args.source,
-        df=train_hospital_df,
+        df=train_wsi_df,
         transform=HeavyAugment(args.img_size),
-        img_size=args.img_size,
+        img_size=args.img_size
     )
 
     save_training_samples(
-        dataset=train_hospital_dataset,
-        target=args.target / "training_samples",
-        suffix="hospital",
+        dataset=train_wsi_dataset,
+        target=args.target.samples / "train",
+        suffix="hospital"
     )
 
     train_hpa_dataset = SlideTileDataset(
@@ -182,7 +190,9 @@ def main(
     )
 
     save_training_samples(
-        dataset=train_hpa_dataset, target=args.target / "training_samples", suffix="hpa"
+        dataset=train_hpa_dataset,
+        target=args.target.samples / "train",
+        suffix="hpa"
     )
 
     # Validation Dataset
@@ -195,18 +205,20 @@ def main(
     )
 
     # Sampler
+    q_n_sample = 1536
     train_sampler = SlideBalancedSampler(
-        dataset=train_hospital_dataset, samples_per_epoch=3072
+        dataset=train_wsi_dataset, samples_per_epoch=q_n_sample * 3, seed=args.seed
     )
 
     train_hpa_sampler = SlideBalancedSampler(
-        dataset=train_hpa_dataset, samples_per_epoch=1024
+        dataset=train_hpa_dataset, samples_per_epoch=q_n_sample, seed=args.seed
     )
 
     # Loader
+    q_batch_size = args.batch_size // 4
     train_loader = DataLoader(
-        train_hospital_dataset,
-        batch_size=(args.batch_size // 4) * 3,
+        train_wsi_dataset,
+        batch_size=q_batch_size * 3,
         sampler=train_sampler,
         num_workers=4,
         pin_memory=True,
@@ -216,7 +228,7 @@ def main(
 
     train_hpa_loader = DataLoader(
         train_hpa_dataset,
-        batch_size=args.batch_size // 4,
+        batch_size=q_batch_size,
         sampler=train_hpa_sampler,
         num_workers=4,
         pin_memory=True,
@@ -233,7 +245,7 @@ def main(
         prefetch_factor=2,
     )
 
-    with mlflow.start_run(run_name=f"train_{datetime.now().strftime('%Y%m%d_%H%M%S')}"):
+    with mlflow.start_run(run_name=f"train_{datetime.now().strftime('%Y%m%d%H%M%S')}"):
         mlflow.log_params(
             {
                 "batch_size": args.batch_size,
@@ -256,10 +268,11 @@ def main(
             arch=args.arch, backbone=args.backbone, weights=args.weights
         ).to(device)
 
-        print(f"Using device: {device}")
-        print("Model Summary:")
-        summary(model, (args.batch_size, 3, args.img_size, args.img_size), depth=1)
-
+        logger.info(f"Using device: {device}")
+        dummy_input_size = (args.batch_size, 3, args.img_size, args.img_size)
+        model_summary = summary(model, input_size=dummy_input_size, depth=1, verbose=0)
+        logger.info(f"Model Summary\n {str(model_summary)}")
+        
         optimizer = AdamW(
             model.parameters(), lr=args.lr, weight_decay=args.weight_decay
         )
@@ -283,9 +296,10 @@ def main(
         )
 
         # Training loop
+        logger.info("Training started")
         best_val_loss = float("inf")
         for epoch in range(args.epochs):
-            print(f"\nEpoch {epoch + 1}/{args.epochs}")
+            logger.info(f"Epoch {epoch + 1}/{args.epochs}")
 
             current_lr = get_lr(epoch)
             for param_group in optimizer.param_groups:
@@ -320,26 +334,27 @@ def main(
                 step=epoch,
             )
 
-            print(f"Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
-            print("Validation Metrics:")
-            for k, v in val_metrics.items():
-                print(f"  {k}: {v:.4f}")
-
+            logger.info(f"Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}")
+            logger.info("Validation Metrics: " + ", ".join(f"{k}={v:.4f}" for k, v in val_metrics.items()))
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
 
-                model_path = args.target / "best_model"
-                shutil.rmtree(model_path, ignore_errors=True)
-                model.save_pretrained(model_path)
+                best_model_path = args.target.checkpoints / "best"
+                shutil.rmtree(best_model_path, ignore_errors=True)
+                model.save_pretrained(best_model_path)
 
-                val_pred_path = args.target / "val_predictions"
+                val_pred_path = args.target.predictions / "val"
                 save_predictions(
                     model, val_dataset, val_pred_path, device, confidence=args.conf
                 )
 
             if early_stopping(epoch, val_loss):
-                print("\nTraining stopped early due to no improvement in val loss")
+                logger.success("Training stopped early due to no improvement in val loss")
                 break
+        
+        last_model_path = args.target.checkpoints / "last"
+        model.save_pretrained(last_model_path)
+        logger.success(f"Model saved at {last_model_path}")
 
 
 if __name__ == "__main__":

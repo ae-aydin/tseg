@@ -1,3 +1,6 @@
+from loguru import logger
+
+
 class EarlyStopping:
     def __init__(
         self,
@@ -31,9 +34,6 @@ class EarlyStopping:
             if self.counter >= self.patience:
                 self.should_stop = True
                 if self.verbose:
-                    print(
-                        f"\nEarly stopping triggered after {epoch + 1} epochs. "
-                        f"Best value: {self.best_value:.4f} at epoch {self.best_epoch + 1}"
-                    )
-
+                    logger.success(f"Early stopping triggered after {epoch + 1} epochs")
+                    logger.success(f"Best value: {self.best_value:.4f} at epoch {self.best_epoch + 1}")
         return self.should_stop

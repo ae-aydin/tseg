@@ -2,8 +2,8 @@ import segmentation_models_pytorch as smp
 
 
 def get_smp_model(
-    arch: str = "unet",
-    backbone: str = "mobilenet_v2",
+    arch: str = "unetplusplus",
+    backbone: str = "efficientnet-b0",
     weights: str = "imagenet",
     encoder_depth: int = 5,
     decoder_channels: list[int] = [256, 128, 64, 32, 16],

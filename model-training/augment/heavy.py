@@ -44,14 +44,14 @@ class HeavyAugment:
                 A.HorizontalFlip(p=0.5),
                 A.VerticalFlip(p=0.5),
                 A.Affine(
-                    translate_percent=(-0.2, 0.2),
-                    scale=(0.8, 1.2),
-                    rotate=(-45, 45),
-                    p=0.3,
+                    translate_percent=(-0.1, 0.1),
+                    scale=(0.9, 1.1),
+                    rotate=(-15, 15),
+                    p=0.2,
                 ),
-                A.ElasticTransform(alpha=120, sigma=120 * 0.05, p=0.3),
-                A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.3),
-                A.OpticalDistortion(distort_limit=0.3, p=0.3),
+                A.ElasticTransform(alpha=80, sigma=80 * 0.05, p=0.1),
+                A.GridDistortion(num_steps=5, distort_limit=0.1, p=0.1),
+                A.OpticalDistortion(distort_limit=0.1, p=0.1),
                 # Quality variations
                 A.OneOf(
                     [
@@ -81,7 +81,7 @@ class HeavyAugment:
                             p=1.0,
                         ),
                     ],
-                    p=0.3,
+                    p=0.2,
                 ),
                 # Normalize and convert to tensor
                 A.Normalize(),

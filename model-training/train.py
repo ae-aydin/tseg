@@ -8,6 +8,7 @@ import torch
 import typer
 from augment import BasicAugment, HeavyAugment
 from dataset import SlideTileDataset, read_tile_metadata, save
+from loguru import logger
 from losses import dice_focal_loss
 from metrics import get_segmentation_metrics
 from model import EarlyStopping, get_smp_model
@@ -21,10 +22,9 @@ from utils import (
     ExperimentDirectory,
     TrainingArguments,
     save_predictions,
-    set_seed,
     save_training_samples,
+    set_seed,
 )
-from loguru import logger
 
 warnings.filterwarnings("ignore")
 
@@ -92,8 +92,8 @@ def validate(
 
         total_loss += loss.item()
 
-        all_outputs.append(outputs.cpu())
-        all_masks.append(masks.cpu())
+        all_outputs.append(outputs.cpu().detach())
+        all_masks.append(masks.cpu().detach())
 
     all_outputs = torch.cat(all_outputs)
     all_masks = torch.cat(all_masks)
@@ -120,7 +120,7 @@ def main(
     backbone: str = typer.Option("efficientnet-b0", help="Backbone network"),
     weights: str = typer.Option("imagenet", help="Pretrained weights"),
     seed: int = typer.Option(42, help="Random seed for reproducibility"),
-):  
+):
     exp = ExperimentDirectory("tumorseg", Path(target))
     args = TrainingArguments(
         source=source,
@@ -142,7 +142,7 @@ def main(
 
     logger.add(args.target.logs / "train.log")
     logger.info(args)
-    
+
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -163,7 +163,7 @@ def main(
 
     val_df = metadata_df[metadata_df["split"] == "val"]
     save(val_df, args.target.logs, "val.csv")
-    
+
     test_df = metadata_df[metadata_df["split"] == "test"]
     save(test_df, args.target.logs, "test.csv")
     logger.info(f"Individual sets saved at {args.target.logs}")
@@ -173,13 +173,11 @@ def main(
         source=args.source,
         df=train_wsi_df,
         transform=HeavyAugment(args.img_size),
-        img_size=args.img_size
+        img_size=args.img_size,
     )
 
     save_training_samples(
-        dataset=train_wsi_dataset,
-        target=args.target.samples / "train",
-        suffix="hospital"
+        dataset=train_wsi_dataset, target=args.target.samples / "train", suffix="wsi"
     )
 
     train_hpa_dataset = SlideTileDataset(
@@ -190,16 +188,13 @@ def main(
     )
 
     save_training_samples(
-        dataset=train_hpa_dataset,
-        target=args.target.samples / "train",
-        suffix="hpa"
+        dataset=train_hpa_dataset, target=args.target.samples / "train", suffix="hpa"
     )
 
     # Validation Dataset
     val_dataset = SlideTileDataset(
         source=args.source,
         df=val_df,
-        category="wsi_tiled",
         transform=BasicAugment(args.img_size),
         img_size=args.img_size,
     )
@@ -272,7 +267,7 @@ def main(
         dummy_input_size = (args.batch_size, 3, args.img_size, args.img_size)
         model_summary = summary(model, input_size=dummy_input_size, depth=1, verbose=0)
         logger.info(f"Model Summary\n {str(model_summary)}")
-        
+
         optimizer = AdamW(
             model.parameters(), lr=args.lr, weight_decay=args.weight_decay
         )
@@ -286,13 +281,13 @@ def main(
 
         def get_lr(epoch):
             if epoch < args.warmup_epochs:
-                return args.lr * (epoch + 1) / args.warmup_epochs
+                return args.lr * (0.1 + 0.9 * (epoch + 1) / args.warmup_epochs)
             return scheduler.get_last_lr()[0]
 
-        criterion = dice_focal_loss()
+        criterion = dice_focal_loss(gamma=1.0)
         scaler = torch.GradScaler()
         early_stopping = EarlyStopping(
-            patience=args.es_patience, min_delta=args.es_delta, mode="min", verbose=True
+            patience=args.es_patience, min_delta=args.es_delta, mode="max", verbose=True
         )
 
         # Training loop
@@ -334,8 +329,13 @@ def main(
                 step=epoch,
             )
 
-            logger.info(f"Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}")
-            logger.info("Validation Metrics: " + ", ".join(f"{k}={v:.4f}" for k, v in val_metrics.items()))
+            logger.info(
+                f"Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}"
+            )
+            logger.info(
+                "Validation Metrics: "
+                + ", ".join(f"{k}={v:.4f}" for k, v in val_metrics.items())
+            )
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
 
@@ -348,10 +348,12 @@ def main(
                     model, val_dataset, val_pred_path, device, confidence=args.conf
                 )
 
-            if early_stopping(epoch, val_loss):
-                logger.success("Training stopped early due to no improvement in val loss")
+            if early_stopping(epoch, val_metrics["dice"]):
+                logger.success(
+                    "Training stopped early due to no improvement in val dice score"
+                )
                 break
-        
+
         last_model_path = args.target.checkpoints / "last"
         model.save_pretrained(last_model_path)
         logger.success(f"Model saved at {last_model_path}")

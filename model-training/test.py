@@ -6,12 +6,12 @@ import torch
 import typer
 from augment import BasicAugment
 from dataset import SlideTileDataset, read_tile_metadata, save
+from loguru import logger
 from losses import dice_focal_loss
 from metrics import get_segmentation_metrics
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from utils import ExperimentDirectory, TestArguments, save_predictions, set_seed
-from loguru import logger
 
 warnings.filterwarnings("ignore")
 
@@ -37,8 +37,8 @@ def test(
 
         total_loss += loss.item()
 
-        all_outputs.append(outputs.cpu())
-        all_masks.append(masks.cpu())
+        all_outputs.append(outputs.cpu().detach())
+        all_masks.append(masks.cpu().detach())
 
     all_outputs = torch.cat(all_outputs)
     all_masks = torch.cat(all_masks)
@@ -58,7 +58,7 @@ def main(
     conf: float = typer.Option(0.5, help="Confidence threshold"),
     seed: int = typer.Option(42, help="Random seed for reproducibility"),
     num_samples: int = typer.Option(25, help="Number of samples to visualize"),
-):  
+):
     exp = ExperimentDirectory("tumorseg_test", Path(target))
     args = TestArguments(
         model_path=model_path,
@@ -72,7 +72,7 @@ def main(
 
     logger.add(args.target.logs / "test.log")
     logger.info(args)
-    
+
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -103,13 +103,15 @@ def main(
     model.eval()
     logger.info(f"Using device: {device}")
 
-    criterion = dice_focal_loss()
+    criterion = dice_focal_loss(gamma=1.0)
 
     logger.info("Running inference on test set...")
     test_loss, test_metrics = test(model, test_loader, criterion, device, args.conf)
 
     logger.success(f"Test Loss: {test_loss:.4f}")
-    logger.success("Test Metrics: " + ", ".join(f"{k}={v:.4f}" for k, v in test_metrics.items()))
+    logger.success(
+        "Test Metrics: " + ", ".join(f"{k}={v:.4f}" for k, v in test_metrics.items())
+    )
     logger.info("Saving post-processed predictions for test samples...")
 
     test_pred_path = args.target.predictions / "test"
@@ -120,7 +122,7 @@ def main(
         device=device,
         confidence=args.conf,
         num_samples=num_samples,
-        post_process=True
+        post_process=True,
     )
 
     total_saved_samples = num_samples if num_samples else len(test_dataset)

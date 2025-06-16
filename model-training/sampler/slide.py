@@ -22,10 +22,8 @@ class SlideBalancedSampler(Sampler):
         # Use seeded random generators
         rng = np.random.default_rng(self.seed)
         random_rng = random.Random(self.seed)
-        
-        slide_deck = rng.choice(
-            self.slide_ids, self.samples_per_epoch, replace=True
-        )
+
+        slide_deck = rng.choice(self.slide_ids, self.samples_per_epoch, replace=True)
         epoch_indices = []
         for slide_id in slide_deck:
             possible_indices = self.slide_to_indices[slide_id]

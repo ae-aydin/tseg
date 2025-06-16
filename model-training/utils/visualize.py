@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset, Subset
 
-from .image import unnormalize, post_process_image
+from .image import post_process_image, unnormalize
 
 
 def save_training_samples(

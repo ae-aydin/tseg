@@ -30,5 +30,6 @@ def post_process_image(
     enhanced = (enhanced > 0.5).astype(bool)
 
     enhanced = morphology.remove_small_objects(enhanced, min_size=min_object_size)
+    enhanced = morphology.remove_small_holes(enhanced, area_threshold=min_object_size)
 
     return enhanced.astype(np.float32)

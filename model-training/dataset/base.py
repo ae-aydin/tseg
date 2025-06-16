@@ -36,7 +36,7 @@ class BaseDataset(Dataset):
             mask = mask.float().div(255).unsqueeze(0)
         else:
             image = torch.from_numpy(image).permute(2, 0, 1).float() / 255.0
-            mask = torch.from_numpy(mask).unsqueeze(0).float()
+            mask = torch.from_numpy(mask).unsqueeze(0).float() / 255.0
         return image, mask
 
     def __getitem__(self, idx):

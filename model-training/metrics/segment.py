@@ -3,17 +3,19 @@ import torch
 
 
 def get_segmentation_metrics(
-    pred: torch.Tensor, target: torch.Tensor, confidence: float = 0.5
+    pred: torch.Tensor,
+    target: torch.Tensor,
+    confidence: float = 0.5,
+    reduction: str = "micro-imagewise",
 ) -> dict[str, float]:
     pred = (torch.sigmoid(pred) > confidence).int()
-    tp, fp, fn, tn = smp.metrics.get_stats(
-        pred, target.int(), mode="binary", threshold=confidence
-    )
+    target = target.int()
+    tp, fp, fn, tn = smp.metrics.get_stats(pred, target, mode="binary")
 
-    dice = smp.metrics.f1_score(tp, fp, fn, tn, reduction="micro-imagewise")
-    iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro-imagewise")
-    precision = smp.metrics.precision(tp, fp, fn, tn, reduction="micro-imagewise")
-    recall = smp.metrics.recall(tp, fp, fn, tn, reduction="micro-imagewise")
+    dice = smp.metrics.f1_score(tp, fp, fn, tn, reduction=reduction)
+    iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction=reduction)
+    precision = smp.metrics.precision(tp, fp, fn, tn, reduction=reduction)
+    recall = smp.metrics.recall(tp, fp, fn, tn, reduction=reduction)
 
     return {
         "dice": dice.item(),

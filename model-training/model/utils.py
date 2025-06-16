@@ -35,5 +35,7 @@ class EarlyStopping:
                 self.should_stop = True
                 if self.verbose:
                     logger.success(f"Early stopping triggered after {epoch + 1} epochs")
-                    logger.success(f"Best value: {self.best_value:.4f} at epoch {self.best_epoch + 1}")
+                    logger.success(
+                        f"Best value: {self.best_value:.4f} at epoch {self.best_epoch + 1}"
+                    )
         return self.should_stop

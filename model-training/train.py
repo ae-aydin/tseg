@@ -119,9 +119,55 @@ def main(
     arch: str = typer.Option("unetplusplus", help="Model architecture"),
     backbone: str = typer.Option("efficientnet-b0", help="Backbone network"),
     weights: str = typer.Option("imagenet", help="Pretrained weights"),
+    cv: bool = typer.Option(False, help="Train all 5 folds back-to-back"),
     seed: int = typer.Option(42, help="Random seed for reproducibility"),
 ):
-    exp = ExperimentDirectory("tumorseg", Path(target))
+    n_folds = 1 if not cv else len(list(Path(source / "metadata" / "cv").iterdir()))
+    logger.info(f"Training {'all' if cv else 'single'} {n_folds} fold(s)")
+
+    for fold in range(n_folds):
+        logger.info(f"Starting fold {fold if cv else 'full-data'}")
+        train(
+            source=source,
+            target=target,
+            batch_size=batch_size,
+            img_size=img_size,
+            conf=conf,
+            lr=lr,
+            warmup_epochs=warmup_epochs,
+            weight_decay=weight_decay,
+            epochs=epochs,
+            es_patience=es_patience,
+            es_delta=es_delta,
+            arch=arch,
+            backbone=backbone,
+            weights=weights,
+            seed=seed,
+            fold=fold if cv else None,
+        )
+    logger.success(f"{'All folds' if cv else 'Full-data training'} completed")
+
+
+def train(
+    source: Path,
+    target: str,
+    batch_size: int,
+    img_size: int,
+    conf: float,
+    lr: float,
+    warmup_epochs: int,
+    weight_decay: float,
+    epochs: int,
+    es_patience: int,
+    es_delta: float,
+    arch: str,
+    backbone: str,
+    weights: str,
+    seed: int,
+    fold: int = None,
+):
+    experiment_name = "tumorseg" if fold is None else f"tumorseg_fold_{fold}"
+    exp = ExperimentDirectory(experiment_name, Path(target))
     args = TrainingArguments(
         source=source,
         target=exp,
@@ -140,16 +186,23 @@ def main(
         seed=seed,
     )
 
-    logger.add(args.target.logs / "train.log")
+    log_file = logger.add(args.target.logs / "train.log")
     logger.info(args)
 
     set_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     mlflow.set_tracking_uri("http://127.0.0.1:8080")
-    mlflow.set_experiment(args.target.experiment_name)
-
-    metadata_df = read_tile_metadata(args.source / "metadata")
+    
+    if fold is not None:
+        logger.info(f"Using cross-validation fold {fold}")
+        split_file = f"cv/split_fold_{fold}.csv"
+        metadata_df = read_tile_metadata(args.source / "metadata", split_file)
+    else:
+        logger.info("Using standard train/val/test split")
+        metadata_df = read_tile_metadata(args.source / "metadata")
+    logger.info(f"Loaded with {len(metadata_df)} samples")
+    
     save(metadata_df, args.target.logs, "metadata.csv")
 
     train_df = metadata_df[metadata_df["split"] == "train"]
@@ -240,7 +293,10 @@ def main(
         prefetch_factor=2,
     )
 
-    with mlflow.start_run(run_name=f"train_{datetime.now().strftime('%Y%m%d%H%M%S')}"):
+
+    mlflow.set_experiment("tumorseg")
+    run_cv_name = "" if fold is None else f"fold_{fold}"
+    with mlflow.start_run(run_name=f"train_{run_cv_name}_{datetime.now().strftime('%y%m%d_%H%M%S')}"):
         mlflow.log_params(
             {
                 "batch_size": args.batch_size,
@@ -256,6 +312,7 @@ def main(
                 "es_patience": args.es_patience,
                 "es_delta": args.es_delta,
                 "seed": args.seed,
+                "fold": fold,
             }
         )
 
@@ -357,6 +414,7 @@ def main(
         last_model_path = args.target.checkpoints / "last"
         model.save_pretrained(last_model_path)
         logger.success(f"Model saved at {last_model_path}")
+        logger.remove(log_file)
 
 
 if __name__ == "__main__":

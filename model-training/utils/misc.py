@@ -18,7 +18,7 @@ class ExperimentDirectory:
     _samples: str = "samples"
 
     def __post_init__(self):
-        self.timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        self.timestamp = datetime.now().strftime("%y%m%d_%H%M%S")
         self.create_dirs()
 
     @property

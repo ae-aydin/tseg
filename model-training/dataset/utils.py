@@ -21,8 +21,8 @@ def bin_tumor_fracs(
     )
 
 
-def read_tile_metadata(source: Path) -> pd.DataFrame:
-    split_df = pl.read_csv(source / "split_info.csv")
+def read_tile_metadata(source: Path, split_file: str = "split_info.csv") -> pd.DataFrame:
+    split_df = pl.read_csv(source / split_file)
     slide_df = pl.read_csv(source / "slide_info.csv")
     tiles_df = pl.read_csv(source / "tile_info.csv")
 

@@ -193,7 +193,7 @@ def train(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     mlflow.set_tracking_uri("http://127.0.0.1:8080")
-    
+
     if fold is not None:
         logger.info(f"Using cross-validation fold {fold}")
         split_file = f"cv/split_fold_{fold}.csv"
@@ -202,7 +202,7 @@ def train(
         logger.info("Using standard train/val/test split")
         metadata_df = read_tile_metadata(args.source / "metadata")
     logger.info(f"Loaded with {len(metadata_df)} samples")
-    
+
     save(metadata_df, args.target.logs, "metadata.csv")
 
     train_df = metadata_df[metadata_df["split"] == "train"]
@@ -293,10 +293,11 @@ def train(
         prefetch_factor=2,
     )
 
-
     mlflow.set_experiment("tumorseg")
     run_cv_name = "" if fold is None else f"fold_{fold}"
-    with mlflow.start_run(run_name=f"train_{run_cv_name}_{datetime.now().strftime('%y%m%d_%H%M%S')}"):
+    with mlflow.start_run(
+        run_name=f"train_{run_cv_name}_{datetime.now().strftime('%y%m%d_%H%M%S')}"
+    ):
         mlflow.log_params(
             {
                 "batch_size": args.batch_size,

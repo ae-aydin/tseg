@@ -11,13 +11,13 @@ from .segment import (
 )
 
 __all__ = [
-    bce_loss,
-    bce_dice_loss,
-    bce_focal_loss,
-    dice_focal_loss,
-    dice_loss,
-    focal_loss,
-    tversky_focal_loss,
-    tversky_dice_loss,
-    tversky_loss,
+    "bce_loss",
+    "bce_dice_loss",
+    "bce_focal_loss",
+    "dice_focal_loss",
+    "dice_loss",
+    "focal_loss",
+    "tversky_focal_loss",
+    "tversky_dice_loss",
+    "tversky_loss",
 ]

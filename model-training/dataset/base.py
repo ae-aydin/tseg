@@ -14,7 +14,7 @@ class BaseDataset(Dataset):
         transform=None,
         img_size: int = 512,
     ):
-        self.source = source
+        self.source = source.expanduser().resolve()
         self.transform = transform
         self.img_size = img_size
         self.df = df.reset_index(drop=True)

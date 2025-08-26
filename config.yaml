@@ -1,0 +1,25 @@
+data:
+  source: "~/Playground/tiles/dataset-combined-512-256-jpg"
+  target: "experiments"
+  img_size: 256
+  seed: 42
+
+model:
+  arch: "segformer"
+  backbone: "mit_b0"
+  weights: "imagenet"
+
+train:
+  batch_size: 48
+  lr: 0.0001
+  warmup_epochs: 3
+  weight_decay: 0.0001
+  epochs: 20
+  es_patience: 10
+  es_delta: 0.0001
+  conf: 0.5
+
+test:
+  batch_size: 32
+  conf: 0.5
+  num_samples: 25

@@ -58,56 +58,6 @@ class ExperimentDirectory:
         return str(self.experiment_dir)
 
 
-class PrintableArgs:
-    def print_args(self) -> None:
-        print(f"\n{self.__class__.__name__}:")
-        print("-" * 50)
-        for key, value in vars(self).items():
-            if isinstance(value, Path):
-                print(f"{key:25} = {value.resolve()}")
-            else:
-                print(f"{key:25} = {value}")
-        print("-" * 50 + "\n")
-
-    def __str__(self):
-        return f"{self.__class__.__name__}: " + ", ".join(
-            f"{k}={v}" for k, v in vars(self).items()
-        )
-
-
-@dataclass
-class TrainingArguments(PrintableArgs):
-    source: Path
-    target: ExperimentDirectory
-
-    batch_size: int = 32
-    img_size: int = 256
-    conf: float = 0.5
-    seed: int = 42
-
-    lr: float = 1e-4
-    warmup_epochs: int = 3
-    weight_decay: float = 1e-4
-    epochs: int = 100
-    es_patience: int = 10
-    es_delta: float = 1e-4
-    arch: str = "unetplusplus"
-    backbone: str = "efficientnet-b0"
-    weights: str = "imagenet"
-
-
-@dataclass
-class TestArguments(PrintableArgs):
-    model_path: Path
-    source: Path
-    target: ExperimentDirectory
-
-    batch_size: int = 32
-    img_size: int = 256
-    conf: float = 0.5
-    seed: int = 42
-
-
 def set_seed(seed: int = 42) -> None:
     random.seed(seed)
     np.random.seed(seed)

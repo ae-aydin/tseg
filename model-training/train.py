@@ -18,13 +18,7 @@ from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from torch.utils.data import DataLoader
 from torchinfo import summary
 from tqdm import tqdm
-from utils import (
-    ExperimentDirectory,
-    TrainingArguments,
-    save_predictions,
-    save_training_samples,
-    set_seed,
-)
+from utils import *
 
 warnings.filterwarnings("ignore")
 
@@ -104,169 +98,110 @@ def validate(
     return avg_loss, epoch_metrics
 
 
-def main(
-    source: Path = typer.Argument(..., help="Path to dataset directory"),
-    target: str = typer.Option("experiments", help="Path to output directory"),
-    batch_size: int = typer.Option(32, help="Training batch size"),
-    img_size: int = typer.Option(256, help="Input image size for training"),
-    conf: float = typer.Option(0.5, help="Confidence"),
-    lr: float = typer.Option(1e-4, help="Learning rate"),
-    warmup_epochs: int = typer.Option(3, help="Number of warmup epochs"),
-    weight_decay: float = typer.Option(1e-4, help="Weight decay"),
-    epochs: int = typer.Option(100, help="Number of training epochs"),
-    es_patience: int = typer.Option(10, help="Early stopping patience"),
-    es_delta: float = typer.Option(1e-4, help="Early stopping min delta"),
-    arch: str = typer.Option("unetplusplus", help="Model architecture"),
-    backbone: str = typer.Option("efficientnet-b0", help="Backbone network"),
-    weights: str = typer.Option("imagenet", help="Pretrained weights"),
-    cv: bool = typer.Option(False, help="Train all 5 folds back-to-back"),
-    seed: int = typer.Option(42, help="Random seed for reproducibility"),
-):
-    n_folds = 1 if not cv else len(list(Path(source / "metadata" / "cv").iterdir()))
-    logger.info(f"Training {'all' if cv else 'single'} {n_folds} fold(s)")
-
-    for fold in range(n_folds):
-        logger.info(f"Starting fold {fold if cv else 'full-data'}")
-        train(
-            source=source,
-            target=target,
-            batch_size=batch_size,
-            img_size=img_size,
-            conf=conf,
-            lr=lr,
-            warmup_epochs=warmup_epochs,
-            weight_decay=weight_decay,
-            epochs=epochs,
-            es_patience=es_patience,
-            es_delta=es_delta,
-            arch=arch,
-            backbone=backbone,
-            weights=weights,
-            seed=seed,
-            fold=fold if cv else None,
-        )
-    logger.success(f"{'All folds' if cv else 'Full-data training'} completed")
-
-
 def train(
-    source: Path,
-    target: str,
-    batch_size: int,
-    img_size: int,
-    conf: float,
-    lr: float,
-    warmup_epochs: int,
-    weight_decay: float,
-    epochs: int,
-    es_patience: int,
-    es_delta: float,
-    arch: str,
-    backbone: str,
-    weights: str,
-    seed: int,
+    config: Config,
     fold: int = None,
 ):
     experiment_name = "tumorseg" if fold is None else f"tumorseg_fold_{fold}"
-    exp = ExperimentDirectory(experiment_name, Path(target))
-    args = TrainingArguments(
-        source=source,
-        target=exp,
-        batch_size=batch_size,
-        img_size=img_size,
-        conf=conf,
-        lr=lr,
-        warmup_epochs=warmup_epochs,
-        weight_decay=weight_decay,
-        epochs=epochs,
-        es_patience=es_patience,
-        es_delta=es_delta,
-        arch=arch,
-        backbone=backbone,
-        weights=weights,
-        seed=seed,
-    )
+    exp_dir = ExperimentDirectory(experiment_name, Path(config.data.target))
 
-    log_file = logger.add(args.target.logs / "train.log")
-    logger.info(args)
+    mlflow_uri = Path("mlruns").resolve().as_uri()
+    mlflow.set_tracking_uri(mlflow_uri)
+    logger.info(f"MLflow tracking data will be saved to: {mlflow_uri}")
 
-    set_seed(args.seed)
+    log_file = logger.add(exp_dir.logs / "train.log")
+    config.log(logger)
+
+    set_seed(config.data.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    mlflow.set_tracking_uri("http://127.0.0.1:8080")
 
     if fold is not None:
         logger.info(f"Using cross-validation fold {fold}")
         split_file = f"cv/split_fold_{fold}.csv"
-        metadata_df = read_tile_metadata(args.source / "metadata", split_file)
+        metadata_df = read_tile_metadata(config.data.source / "metadata", split_file)
     else:
         logger.info("Using standard train/val/test split")
-        metadata_df = read_tile_metadata(args.source / "metadata")
+        metadata_df = read_tile_metadata(config.data.source / "metadata")
     logger.info(f"Loaded with {len(metadata_df)} samples")
 
-    save(metadata_df, args.target.logs, "metadata.csv")
+    save(metadata_df, exp_dir.logs, "metadata.csv")
 
     train_df = metadata_df[metadata_df["split"] == "train"]
-    save(train_df, args.target.logs, "train.csv")
+    save(train_df, exp_dir.logs, "train.csv")
 
     train_wsi_df = train_df[train_df["category"] == "wsi_tiled"]
-    save(train_wsi_df, args.target.logs, "train_hospital.csv")
+    save(train_wsi_df, exp_dir.logs, "train_hospital.csv")
 
     train_hpa_df = train_df[train_df["category"] == "img_tiled"]
-    save(train_hpa_df, args.target.logs, "train_hpa.csv")
+    save(train_hpa_df, exp_dir.logs, "train_hpa.csv")
 
     val_df = metadata_df[metadata_df["split"] == "val"]
-    save(val_df, args.target.logs, "val.csv")
+    save(val_df, exp_dir.logs, "val.csv")
 
     test_df = metadata_df[metadata_df["split"] == "test"]
-    save(test_df, args.target.logs, "test.csv")
-    logger.info(f"Individual sets saved at {args.target.logs}")
+    save(test_df, exp_dir.logs, "test.csv")
+    logger.info(f"Individual sets saved at {exp_dir.logs}")
+
+    # Check if validation dataset is empty
+    has_validation = len(val_df) > 0
+    has_test = len(test_df) > 0
+
+    if not has_validation:
+        logger.warning("Validation dataset is empty - training without validation")
+    if not has_test:
+        logger.warning("Test dataset is empty")
 
     # Training Dataset
     train_wsi_dataset = SlideTileDataset(
-        source=args.source,
+        source=config.data.source,
         df=train_wsi_df,
-        transform=HeavyAugment(args.img_size),
-        img_size=args.img_size,
+        transform=HeavyAugment(config.data.img_size),
+        img_size=config.data.img_size,
     )
 
     save_training_samples(
-        dataset=train_wsi_dataset, target=args.target.samples / "train", suffix="wsi"
+        dataset=train_wsi_dataset, target=exp_dir.samples / "train", suffix="wsi"
     )
 
     train_hpa_dataset = SlideTileDataset(
-        source=args.source,
+        source=config.data.source,
         df=train_hpa_df,
-        transform=HeavyAugment(args.img_size),
-        img_size=args.img_size,
+        transform=HeavyAugment(config.data.img_size),
+        img_size=config.data.img_size,
     )
 
     save_training_samples(
-        dataset=train_hpa_dataset, target=args.target.samples / "train", suffix="hpa"
+        dataset=train_hpa_dataset, target=exp_dir.samples / "train", suffix="hpa"
     )
 
-    # Validation Dataset
-    val_dataset = SlideTileDataset(
-        source=args.source,
-        df=val_df,
-        transform=BasicAugment(args.img_size),
-        img_size=args.img_size,
-    )
+    # Validation Dataset (only create if validation data exists)
+    val_dataset = None
+    if has_validation:
+        val_dataset = SlideTileDataset(
+            source=config.data.source,
+            df=val_df,
+            transform=BasicAugment(config.data.img_size),
+            img_size=config.data.img_size,
+        )
 
     # Sampler
     q_n_sample = 1536
     train_sampler = SlideBalancedSampler(
-        dataset=train_wsi_dataset, samples_per_epoch=q_n_sample * 3, seed=args.seed
+        dataset=train_wsi_dataset,
+        samples_per_epoch=q_n_sample * 3,
+        seed=config.data.seed,
     )
 
     train_hpa_sampler = SlideBalancedSampler(
-        dataset=train_hpa_dataset, samples_per_epoch=q_n_sample, seed=args.seed
+        dataset=train_hpa_dataset, samples_per_epoch=q_n_sample, seed=config.data.seed
     )
 
     # Loader
-    q_batch_size = args.batch_size // 4
+    batch_size = config.train.batch_size
+    quarter_batch_size = batch_size // 4
     train_loader = DataLoader(
         train_wsi_dataset,
-        batch_size=q_batch_size * 3,
+        batch_size=quarter_batch_size * 3,
         sampler=train_sampler,
         num_workers=4,
         pin_memory=True,
@@ -276,7 +211,7 @@ def train(
 
     train_hpa_loader = DataLoader(
         train_hpa_dataset,
-        batch_size=q_batch_size,
+        batch_size=quarter_batch_size,
         sampler=train_hpa_sampler,
         num_workers=4,
         pin_memory=True,
@@ -284,75 +219,70 @@ def train(
         prefetch_factor=2,
     )
 
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size=args.batch_size,
-        num_workers=4,
-        pin_memory=True,
-        persistent_workers=True,
-        prefetch_factor=2,
-    )
+    val_loader = None
+    if has_validation:
+        val_loader = DataLoader(
+            val_dataset,
+            batch_size=batch_size,
+            num_workers=4,
+            pin_memory=True,
+            persistent_workers=True,
+            prefetch_factor=2,
+        )
 
-    mlflow.set_experiment("tumorseg")
+    mlflow.set_experiment(experiment_name)
     run_cv_name = "" if fold is None else f"fold_{fold}"
     with mlflow.start_run(
         run_name=f"train_{run_cv_name}_{datetime.now().strftime('%y%m%d_%H%M%S')}"
     ):
-        mlflow.log_params(
-            {
-                "batch_size": args.batch_size,
-                "img_size": args.img_size,
-                "conf": args.conf,
-                "lr": args.lr,
-                "warmup_epochs": args.warmup_epochs,
-                "weight_decay": args.weight_decay,
-                "epochs": args.epochs,
-                "arch": args.arch,
-                "backbone": args.backbone,
-                "weights": args.weights,
-                "es_patience": args.es_patience,
-                "es_delta": args.es_delta,
-                "seed": args.seed,
-                "fold": fold,
-            }
-        )
+        mlflow.log_dict(config.model_dump(), "config.json")
+        mlflow.log_artifacts(exp_dir.logs, artifact_path="data_splits")
 
         model = get_smp_model(
-            arch=args.arch, backbone=args.backbone, weights=args.weights
+            arch=config.model.arch,
+            backbone=config.model.backbone,
+            weights=config.model.weights,
         ).to(device)
 
         logger.info(f"Using device: {device}")
-        dummy_input_size = (args.batch_size, 3, args.img_size, args.img_size)
+        dummy_input_size = (batch_size, 3, config.data.img_size, config.data.img_size)
         model_summary = summary(model, input_size=dummy_input_size, depth=1, verbose=0)
-        logger.info(f"Model Summary\n {str(model_summary)}")
+        logger.info(f"Model Summary\n{str(model_summary)}")
 
         optimizer = AdamW(
-            model.parameters(), lr=args.lr, weight_decay=args.weight_decay
+            model.parameters(),
+            lr=config.train.lr,
+            weight_decay=config.train.weight_decay,
         )
 
         scheduler = CosineAnnealingWarmRestarts(
             optimizer,
-            T_0=args.epochs - args.warmup_epochs,
+            T_0=config.train.epochs - config.train.warmup_epochs,
             T_mult=1,
-            eta_min=args.lr * 0.01,
+            eta_min=config.train.lr * 0.01,
         )
 
         def get_lr(epoch):
-            if epoch < args.warmup_epochs:
-                return args.lr * (0.1 + 0.9 * (epoch + 1) / args.warmup_epochs)
+            if epoch < config.train.warmup_epochs:
+                return config.train.lr * (
+                    0.1 + 0.9 * (epoch + 1) / config.train.warmup_epochs
+                )
             return scheduler.get_last_lr()[0]
 
         criterion = dice_focal_loss(gamma=1.0)
         scaler = torch.GradScaler()
         early_stopping = EarlyStopping(
-            patience=args.es_patience, min_delta=args.es_delta, mode="max", verbose=True
+            patience=config.train.es_patience,
+            min_delta=config.train.es_delta,
+            mode="max",
+            verbose=True,
         )
 
         # Training loop
         logger.info("Training started")
         best_val_loss = float("inf")
-        for epoch in range(args.epochs):
-            logger.info(f"Epoch {epoch + 1}/{args.epochs}")
+        for epoch in range(config.train.epochs):
+            logger.info(f"Epoch {epoch + 1}/{config.train.epochs}")
 
             current_lr = get_lr(epoch)
             for param_group in optimizer.param_groups:
@@ -367,55 +297,107 @@ def train(
                 device,
                 scaler,
             )
-            val_loss, val_metrics = validate(
-                model, val_loader, criterion, device, args.conf
-            )
 
-            if epoch >= args.warmup_epochs:
+            if has_validation:
+                val_loss, val_metrics = validate(
+                    model, val_loader, criterion, device, config.train.conf
+                )
+            else:
+                val_loss = float("inf")
+                val_metrics = {"dice": 0.0, "iou": 0.0, "precision": 0.0, "recall": 0.0}
+
+            if epoch >= config.train.warmup_epochs:
                 scheduler.step()
 
-            mlflow.log_metrics(
-                {
-                    "train_loss": train_loss,
-                    "val_loss": val_loss,
-                    "learning_rate": current_lr,
-                    "val_dice": val_metrics["dice"],
-                    "val_iou": val_metrics["iou"],
-                    "val_precision": val_metrics["precision"],
-                    "val_recall": val_metrics["recall"],
-                },
-                step=epoch,
-            )
+            metrics_to_log = {
+                "train_loss": train_loss,
+                "learning_rate": current_lr,
+            }
 
-            logger.info(
-                f"Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}"
-            )
-            logger.info(
-                "Validation Metrics: "
-                + ", ".join(f"{k}={v:.4f}" for k, v in val_metrics.items())
-            )
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-
-                best_model_path = args.target.checkpoints / "best"
-                shutil.rmtree(best_model_path, ignore_errors=True)
-                model.save_pretrained(best_model_path)
-
-                val_pred_path = args.target.predictions / "val"
-                save_predictions(
-                    model, val_dataset, val_pred_path, device, confidence=args.conf
+            if has_validation:
+                metrics_to_log.update(
+                    {
+                        "val_loss": val_loss,
+                        "val_dice": val_metrics["dice"],
+                        "val_iou": val_metrics["iou"],
+                        "val_precision": val_metrics["precision"],
+                        "val_recall": val_metrics["recall"],
+                    }
                 )
 
-            if early_stopping(epoch, val_metrics["dice"]):
+            mlflow.log_metrics(metrics_to_log, step=epoch)
+
+            if has_validation:
+                logger.info(
+                    f"Train Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}"
+                )
+                logger.info(
+                    "Validation Metrics: "
+                    + ", ".join(f"{k}={v:.4f}" for k, v in val_metrics.items())
+                )
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+
+                    best_model_path = exp_dir.checkpoints / "best"
+                    shutil.rmtree(best_model_path, ignore_errors=True)
+                    model.save_pretrained(best_model_path)
+
+                    val_pred_path = exp_dir.predictions / "val"
+                    save_predictions(
+                        model,
+                        val_dataset,
+                        val_pred_path,
+                        device,
+                        confidence=config.train.conf,
+                    )
+            else:
+                logger.info(f"Train Loss: {train_loss:.4f} (No validation)")
+
+            if has_validation and early_stopping(epoch, val_metrics["dice"]):
                 logger.success(
                     "Training stopped early due to no improvement in val dice score"
                 )
                 break
 
-        last_model_path = args.target.checkpoints / "last"
+        last_model_path = exp_dir.checkpoints / "last"
         model.save_pretrained(last_model_path)
         logger.success(f"Model saved at {last_model_path}")
         logger.remove(log_file)
+
+
+def main(
+    config_path: Path = typer.Argument(
+        "config.yaml", help="Path to the configuration YAML file"
+    ),
+    cv: bool = typer.Option(
+        False, "--cv", help="Train all folds back-to-back using CV"
+    ),
+):
+    try:
+        config = Config.from_yaml(config_path)
+    except FileNotFoundError:
+        logger.error(f"Configuration file not found at: {config_path}")
+        raise typer.Exit(code=1)
+    except Exception as e:
+        logger.error(f"Error parsing configuration file: {e}")
+        raise typer.Exit(code=1)
+
+    n_folds = 1
+    if cv:
+        cv_path = config.data.source / "metadata" / "cv"
+        if not cv_path.exists():
+            logger.error(f"Cross-validation directory not found: {cv_path}")
+            raise typer.Exit(code=1)
+        n_folds = len(list(cv_path.glob("*.csv")))
+    logger.info(f"Training {'all' if cv else 'single'} {n_folds} fold(s)")
+
+    for fold_idx in range(n_folds):
+        current_fold = fold_idx if cv else None
+        logger.info(
+            f"--- Starting {'Fold ' + str(current_fold) if cv else 'Training'} ---"
+        )
+        train(config, fold=current_fold)
+    logger.success(f"{'All folds' if cv else 'Training'} completed")
 
 
 if __name__ == "__main__":

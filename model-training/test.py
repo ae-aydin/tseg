@@ -11,7 +11,7 @@ from losses import dice_focal_loss
 from metrics import get_segmentation_metrics
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import ExperimentDirectory, TestArguments, save_predictions, set_seed
+from utils import *
 
 warnings.filterwarnings("ignore")
 
@@ -51,45 +51,41 @@ def test(
 
 def main(
     model_path: Path = typer.Argument(..., help="Path to trained model directory"),
-    source: Path = typer.Argument(..., help="Path to dataset directory"),
-    target: str = typer.Option("experiments", help="Path to output directory"),
-    batch_size: int = typer.Option(32, help="Test batch size"),
-    img_size: int = typer.Option(256, help="Input image size for testing"),
-    conf: float = typer.Option(0.5, help="Confidence threshold"),
-    seed: int = typer.Option(42, help="Random seed for reproducibility"),
-    num_samples: int = typer.Option(25, help="Number of samples to visualize"),
+    config_path: Path = typer.Argument(
+        "config.yaml", help="Path to the configuration YAML file"
+    ),
 ):
-    exp = ExperimentDirectory("tumorseg_test", Path(target))
-    args = TestArguments(
-        model_path=model_path,
-        source=source,
-        target=exp,
-        batch_size=batch_size,
-        img_size=img_size,
-        conf=conf,
-        seed=seed,
-    )
+    try:
+        config = Config.from_yaml(config_path)
+    except FileNotFoundError:
+        logger.error(f"Configuration file not found at: {config_path}")
+        raise typer.Exit(code=1)
+    except Exception as e:
+        logger.error(f"Error parsing configuration file: {e}")
+        raise typer.Exit(code=1)
 
-    logger.add(args.target.logs / "test.log")
-    logger.info(args)
+    exp_dir = ExperimentDirectory("tumorseg_test", Path(config.data.target))
 
-    set_seed(args.seed)
+    logger.add(exp_dir.logs / "test.log")
+    config.log(logger)
+
+    set_seed(config.data.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    metadata_df = read_tile_metadata(args.source / "metadata")
+    metadata_df = read_tile_metadata(config.data.source / "metadata")
     test_df = metadata_df[metadata_df["split"] == "test"]
-    save(test_df, args.target.logs, "test.csv")
+    save(test_df, exp_dir.logs, "test.csv")
 
     test_dataset = SlideTileDataset(
-        source=args.source,
+        source=config.data.source,
         df=test_df,
-        transform=BasicAugment(args.img_size),
-        img_size=args.img_size,
+        transform=BasicAugment(config.data.img_size),
+        img_size=config.data.img_size,
     )
 
     test_loader = DataLoader(
         test_dataset,
-        batch_size=args.batch_size,
+        batch_size=config.test.batch_size,
         shuffle=False,
         num_workers=4,
         pin_memory=True,
@@ -98,7 +94,7 @@ def main(
     )
 
     logger.info(f"Loading model from {model_path}")
-    model = smp.from_pretrained(args.model_path).to(device)
+    model = smp.from_pretrained(model_path).to(device)
 
     model.eval()
     logger.info(f"Using device: {device}")
@@ -106,7 +102,9 @@ def main(
     criterion = dice_focal_loss(gamma=1.0)
 
     logger.info("Running inference on test set...")
-    test_loss, test_metrics = test(model, test_loader, criterion, device, args.conf)
+    test_loss, test_metrics = test(
+        model, test_loader, criterion, device, config.test.conf
+    )
 
     logger.success(f"Test Loss: {test_loss:.4f}")
     logger.success(
@@ -114,19 +112,18 @@ def main(
     )
     logger.info("Saving post-processed predictions for test samples...")
 
-    test_pred_path = args.target.predictions / "test"
+    test_pred_path = exp_dir.predictions / "test"
     save_predictions(
         model=model,
         dataset=test_dataset,
         target=test_pred_path,
         device=device,
-        confidence=args.conf,
-        num_samples=num_samples,
+        confidence=config.test.conf,
+        num_samples=config.test.num_samples,
         post_process=True,
     )
 
-    total_saved_samples = num_samples if num_samples else len(test_dataset)
-    logger.success(f"Saved {total_saved_samples} predictions at {test_pred_path}")
+    logger.success(f"Saved {config.test.num_samples} predictions at {test_pred_path}")
 
 
 if __name__ == "__main__":

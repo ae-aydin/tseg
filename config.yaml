@@ -14,7 +14,7 @@ train:
   lr: 0.0001
   warmup_epochs: 3
   weight_decay: 0.0001
-  epochs: 20
+  epochs: 30
   es_patience: 10
   es_delta: 0.0001
   conf: 0.5

@@ -22,6 +22,7 @@ from utils import *
 
 warnings.filterwarnings("ignore")
 
+app = typer.Typer(pretty_exceptions_show_locals=False)
 
 def train_epoch(model, loader1, loader2, optimizer, criterion, device, scaler):
     assert len(loader1) == len(loader2)
@@ -365,6 +366,7 @@ def train(
         logger.remove(log_file)
 
 
+@app.command()
 def main(
     config_path: Path = typer.Argument(
         "config.yaml", help="Path to the configuration YAML file"
@@ -382,6 +384,7 @@ def main(
         logger.error(f"Error parsing configuration file: {e}")
         raise typer.Exit(code=1)
 
+    config.data.source = config.data.source.expanduser()
     n_folds = 1
     if cv:
         cv_path = config.data.source / "metadata" / "cv"
@@ -401,4 +404,4 @@ def main(
 
 
 if __name__ == "__main__":
-    typer.run(main)
+    app()

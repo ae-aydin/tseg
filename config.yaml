@@ -1,5 +1,5 @@
 data:
-  source: "~/Playground/tiles/dataset-combined-512-256-jpg"
+  source: "~/Playground/tiles/dataset-combined-256-128-2mpp-png/"
   target: "experiments"
   img_size: 256
   seed: 42
@@ -10,7 +10,7 @@ model:
   weights: "imagenet"
 
 train:
-  batch_size: 48
+  batch_size: 64
   lr: 0.0001
   warmup_epochs: 3
   weight_decay: 0.0001

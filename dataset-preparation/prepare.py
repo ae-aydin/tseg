@@ -10,7 +10,7 @@ from tseg import split
 def main(
     source: str,  # path containing tile folders
     target: str,  # path to create dataset folder
-    train_ratio: float = 0.7,
+    train_ratio: float = 0.6,
     hpa_train_only: bool = True,  # use all hpa slides as train
     create_dev: bool = True,  # create validation set
     dev_test_ratio: float = 0.5,

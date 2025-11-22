@@ -27,19 +27,17 @@
 
      - `--train-ratio RATIO` (optional): Train set ratio. Default is 0.6.
 
-     - `--val-ratio RATIO` (optional): Validations set ratio. Default is 0.2.
-       - If `train-ratio + val-ratio == 1`, then no test set created. Otherwise test set created from remaining fraction.
+     - `--hpa-train-only` (optional): Use all HPA TMA cores as train. Default is True.
 
-     - `--yolo-format` (optional): Whether to create YOLO dataset.
-       - All generated YOLO annotations are automatically visualized for sanity check.
+     - `--create-dev` (optional): Create validation set. Default is True.
 
-     - All created/prepared files will be saved into `target`.
+     - `--dev-test-ratio RATIO` (optional): Validation/test set ratio. Default is 0.5.
 
-     - All masks will be converted to yolo format and saved into `target/yolo_dataset` if `--yolo-format` provided.
-       - Change the `[archived]-yolo-model-training/yolo_dataset.yaml` file accordingly (used for YOLO model training).
+     - `--generate-cv` (optional): Generate cross-validation folds. Default is True.
 
-## Future Improvements
+     - `--k-folds K` (optional): Cross-validation fold count. Default is 5.
 
-- Add set-wise metadata extraction.
-- Add YOLO dataset creation.
-- Add k-fold cross-validation scheme.
+     - `--use-yolo-format` (optional): Whether to create YOLO dataset.
+       - Currently not implemented.
+
+     - `seed SEED` (optional): Seed for reproducibility. Default is -1.

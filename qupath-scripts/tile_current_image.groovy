@@ -7,12 +7,14 @@ import javax.imageio.ImageIO;
 // --------------------------------
 
 def classNames = ["Tumor"]
-def imageExtension = ".jpg"
+def imageExtension = ".png"
 
 def prefix = "wsi_tiled"
-double downsample = 3
-int patchSize = 512
-int pixelOverlap = 256
+double targetMPP = 2.0
+double slideMPP = QP.getCurrentImageData().getServerMetadata().getAveragedPixelSize();
+double downsample = targetMPP / slideMPP
+int patchSize = 256
+int pixelOverlap = 128
 def onlyAnnotated = true
 def partialTiles = false
 def customPath = // path to save tiles in
@@ -28,7 +30,9 @@ def fName = name.split("\\.")[0]
 def fOnlyAnnotated = onlyAnnotated ? "T" : "F"
 def fPartialTiles = partialTiles ? "T" : "F"
 
-def folderName = "${prefix}|${fName}|${downsample}|${patchSize}|${pixelOverlap / patchSize}|${fOnlyAnnotated}|${fPartialTiles}"
+def strDownsample = String.format("%.4f", downsample)
+
+def folderName = "${prefix}|${fName}|${strDownsample}|${patchSize}|${pixelOverlap / patchSize}|${fOnlyAnnotated}|${fPartialTiles}"
 def pathOutput = buildFilePath(customPath, folderName)
 mkdirs(pathOutput)
 

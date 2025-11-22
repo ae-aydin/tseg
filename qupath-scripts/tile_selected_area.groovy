@@ -7,12 +7,12 @@ import javax.imageio.ImageIO;
 // --------------------------------
 
 def classNames = ["Tumor"]
-def imageExtension = ".jpg"
+def imageExtension = ".png"
 
 def prefix = "wsi_tiled"
-double downsample = 3
-int patchSize = 512
-int pixelOverlap = 256
+double downsample = 3 // to update
+int patchSize = 256
+int pixelOverlap = 128
 def onlyAnnotated = true
 def partialTiles = false
 def customPath = // path to save tiles in

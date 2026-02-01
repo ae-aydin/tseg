@@ -6,7 +6,7 @@
 
 2. _dataset-preparation_: Prepare dataset from all created tiles.
 
-3. _model-training_: Train YOLO-based segmentation model.
+3. _model-training_: Train a segmentation model.
 
 ## Setup
 
